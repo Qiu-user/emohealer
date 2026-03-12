@@ -1,0 +1,2625 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmoHealer AI - 情绪疗愈医生</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary-blue: #7EB8DA;
+            --deep-blue: #5A9BC7;
+            --soft-blue: #B8D4E8;
+            --cream: #FDF8F3;
+            --warm-white: #FEFEFE;
+            --soft-gray: #F5F5F5;
+            --text-dark: #4A5568;
+            --text-light: #718096;
+            --accent-coral: #E8A598;
+            --accent-green: #9DD6C3;
+            --accent-purple: #B8A9D9;
+            --shadow-soft: 0 4px 20px rgba(126, 184, 218, 0.15);
+            --shadow-hover: 0 8px 30px rgba(126, 184, 218, 0.25);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #FDF8F3 0%, #F0F7FC 50%, #E8F4F8 100%);
+            min-height: 100vh;
+            color: var(--text-dark);
+            line-height: 1.6;
+        }
+
+        /* 导航栏 */
+        .navbar {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            padding: 0 24px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            box-shadow: var(--shadow-soft);
+            z-index: 1000;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .logo-icon {
+            width: 42px;
+            height: 42px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 12px rgba(90, 155, 199, 0.3);
+        }
+
+        .logo-text {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--deep-blue), var(--primary-blue));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 8px;
+        }
+
+        .nav-link {
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            color: var(--text-dark);
+            font-weight: 500;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: none;
+            background: transparent;
+            font-size: 15px;
+            font-family: inherit;
+        }
+
+        .nav-link:hover, .nav-link.active {
+            background: var(--soft-blue);
+            color: var(--deep-blue);
+        }
+
+        .mobile-menu-btn {
+            display: none;
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-dark);
+        }
+
+        /* 主容器 */
+        .main-container {
+            padding-top: 90px;
+            padding-bottom: 40px;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding-left: 20px;
+            padding-right: 20px;
+        }
+
+        /* 页面切换 */
+        .page-section {
+            display: none;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .page-section.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* 首页欢迎区 */
+        .welcome-section {
+            text-align: center;
+            padding: 60px 20px;
+            background: var(--warm-white);
+            border-radius: 24px;
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 40px;
+        }
+
+        .welcome-title {
+            font-size: 36px;
+            margin-bottom: 20px;
+            color: var(--text-dark);
+        }
+
+        .welcome-title span {
+            color: var(--deep-blue);
+        }
+
+        .welcome-subtitle {
+            font-size: 18px;
+            color: var(--text-light);
+            max-width: 700px;
+            margin: 0 auto;
+        }
+
+        /* 功能卡片 */
+        .features-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .feature-card {
+            background: var(--warm-white);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: var(--shadow-soft);
+            transition: all 0.3s ease;
+            cursor: pointer;
+            border: 2px solid transparent;
+        }
+
+        .feature-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+            border-color: var(--soft-blue);
+        }
+
+        .feature-icon {
+            width: 60px;
+            height: 60px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+            margin-bottom: 16px;
+        }
+
+        .feature-icon.blue { background: #E8F4FC; }
+        .feature-icon.coral { background: #FDF0ED; }
+        .feature-icon.green { background: #E8F5F0; }
+        .feature-icon.purple { background: #F0EDF5; }
+
+        .feature-title {
+            font-size: 18px;
+            margin-bottom: 10px;
+            color: var(--text-dark);
+        }
+
+        .feature-desc {
+            font-size: 14px;
+            color: var(--text-light);
+            line-height: 1.6;
+        }
+
+        /* 对话区域 */
+        .chat-section {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .chat-container {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            height: 500px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .chat-header {
+            padding: 20px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            color: white;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .ai-avatar {
+            width: 45px;
+            height: 45px;
+            background: rgba(255,255,255,0.2);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .chat-header-info h3 {
+            font-size: 16px;
+        }
+
+        .chat-header-info p {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+
+        .chat-status {
+            margin-left: auto;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 13px;
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            background: #4ADE80;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .chat-messages {
+            flex: 1;
+            overflow-y: auto;
+            padding: 20px;
+            background: #FAFBFC;
+        }
+
+        .message {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .message.user {
+            flex-direction: row-reverse;
+        }
+
+        .message-avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+            flex-shrink: 0;
+        }
+
+        .message.ai .message-avatar {
+            background: var(--soft-blue);
+        }
+
+        .message.user .message-avatar {
+            background: var(--accent-coral);
+        }
+
+        .message-content {
+            max-width: 75%;
+            padding: 12px 16px;
+            border-radius: 16px;
+            font-size: 14px;
+            line-height: 1.6;
+        }
+
+        .message.ai .message-content {
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-bottom-left-radius: 4px;
+        }
+
+        .message.user .message-content {
+            background: var(--accent-coral);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .emotion-tag {
+            display: inline-block;
+            padding: 2px 10px;
+            background: var(--soft-blue);
+            color: var(--deep-blue);
+            border-radius: 12px;
+            font-size: 12px;
+            margin-bottom: 8px;
+        }
+
+        .message.user .emotion-tag {
+            display: none;
+        }
+
+        .typing-indicator {
+            display: flex;
+            gap: 4px;
+            padding: 12px 16px;
+            background: white;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            width: fit-content;
+        }
+
+        .typing-dot {
+            width: 8px;
+            height: 8px;
+            background: var(--primary-blue);
+            border-radius: 50%;
+            animation: typing 1.4s infinite;
+        }
+
+        .typing-dot:nth-child(2) { animation-delay: 0.2s; }
+        .typing-dot:nth-child(3) { animation-delay: 0.4s; }
+
+        @keyframes typing {
+            0%, 100% { opacity: 0.3; transform: translateY(0); }
+            50% { opacity: 1; transform: translateY(-4px); }
+        }
+
+        .chat-input-area {
+            padding: 16px;
+            background: white;
+            border-top: 1px solid #E5E7EB;
+        }
+
+        .emotion-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+
+        .emotion-btn {
+            padding: 6px 14px;
+            border: 1px solid #E5E7EB;
+            background: white;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .emotion-btn:hover, .emotion-btn.active {
+            background: var(--soft-blue);
+            border-color: var(--primary-blue);
+            color: var(--deep-blue);
+        }
+
+        .input-wrapper {
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input {
+            flex: 1;
+            padding: 12px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 24px;
+            font-size: 14px;
+            font-family: inherit;
+            resize: none;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .chat-input:focus {
+            border-color: var(--primary-blue);
+        }
+
+        .send-btn {
+            width: 44px;
+            height: 44px;
+            border: none;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            color: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 18px;
+            transition: transform 0.2s;
+        }
+
+        .send-btn:hover {
+            transform: scale(1.05);
+        }
+
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        /* 图表区域 */
+        .chart-container {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            padding: 24px;
+        }
+
+        .chart-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .chart-title {
+            font-size: 18px;
+            color: var(--text-dark);
+        }
+
+        .chart-period {
+            display: flex;
+            gap: 8px;
+        }
+
+        .period-btn {
+            padding: 8px 16px;
+            border: 1px solid #E5E7EB;
+            background: white;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .period-btn:hover, .period-btn.active {
+            background: var(--primary-blue);
+            border-color: var(--primary-blue);
+            color: white;
+        }
+
+        #emotionChart {
+            height: 350px;
+        }
+
+        .chart-legend {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-top: 16px;
+        }
+
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .legend-dot {
+            width: 10px;
+            height: 10px;
+            border-radius: 50%;
+        }
+
+        /* 快捷功能 */
+        .quick-actions {
+            margin-bottom: 40px;
+        }
+
+        .section-title {
+            font-size: 24px;
+            text-align: center;
+            margin-bottom: 24px;
+            color: var(--text-dark);
+        }
+
+        .actions-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 16px;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            padding: 20px;
+            background: var(--warm-white);
+            border: 2px solid transparent;
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-align: left;
+            font-family: inherit;
+        }
+
+        .action-btn:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-soft);
+        }
+
+        .action-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+        }
+
+        .action-info h4 {
+            font-size: 15px;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .action-info p {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        /* ========== 新增功能页面样式 ========== */
+
+        /* 情绪日历 */
+        .calendar-container {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .calendar-nav {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
+
+        .calendar-nav button {
+            width: 36px;
+            height: 36px;
+            border: 1px solid #E5E7EB;
+            background: white;
+            border-radius: 50%;
+            cursor: pointer;
+            font-size: 16px;
+            transition: all 0.2s;
+        }
+
+        .calendar-nav button:hover {
+            background: var(--soft-blue);
+            border-color: var(--primary-blue);
+        }
+
+        .calendar-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 8px;
+        }
+
+        .calendar-day-header {
+            text-align: center;
+            font-size: 13px;
+            color: var(--text-light);
+            padding: 8px;
+            font-weight: 500;
+        }
+
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            border: 2px solid transparent;
+            font-size: 14px;
+        }
+
+        .calendar-day:hover {
+            background: var(--soft-blue);
+        }
+
+        .calendar-day.today {
+            border-color: var(--primary-blue);
+            font-weight: 600;
+        }
+
+        .calendar-day.has-data {
+            position: relative;
+        }
+
+        .calendar-day .emotion-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-top: 4px;
+        }
+
+        .emotion-happy { background: #4ADE80; }
+        .emotion-sad { background: #60A5FA; }
+        .emotion-anxious { background: #FBBF24; }
+        .emotion-angry { background: #F87171; }
+        .emotion-tired { background: #A78BFA; }
+
+        /* 日记卡片 */
+        .journal-container {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            padding: 30px;
+        }
+
+        .journal-input {
+            width: 100%;
+            min-height: 200px;
+            padding: 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 16px;
+            font-size: 15px;
+            font-family: inherit;
+            resize: vertical;
+            margin-bottom: 16px;
+            line-height: 1.8;
+        }
+
+        .journal-input:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        .journal-tags {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-bottom: 16px;
+        }
+
+        .journal-tag {
+            padding: 8px 16px;
+            background: var(--soft-gray);
+            border: none;
+            border-radius: 20px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .journal-tag:hover, .journal-tag.active {
+            background: var(--soft-blue);
+            color: var(--deep-blue);
+        }
+
+        .journal-btn {
+            padding: 12px 32px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            color: white;
+            border: none;
+            border-radius: 25px;
+            font-size: 15px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .journal-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(90, 155, 199, 0.4);
+        }
+
+        .journal-history {
+            margin-top: 30px;
+        }
+
+        .journal-item {
+            padding: 20px;
+            background: var(--soft-gray);
+            border-radius: 16px;
+            margin-bottom: 16px;
+        }
+
+        .journal-date {
+            font-size: 13px;
+            color: var(--text-light);
+            margin-bottom: 8px;
+        }
+
+        .journal-content {
+            font-size: 14px;
+            line-height: 1.8;
+        }
+
+        /* 心理测评 */
+        .assessment-container {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .assessment-intro {
+            text-align: center;
+            padding: 40px 20px;
+        }
+
+        .assessment-intro h2 {
+            font-size: 28px;
+            margin-bottom: 16px;
+            color: var(--text-dark);
+        }
+
+        .assessment-intro p {
+            font-size: 16px;
+            color: var(--text-light);
+            max-width: 600px;
+            margin: 0 auto 24px;
+        }
+
+        .assessment-types {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 20px;
+            margin-top: 30px;
+        }
+
+        .assessment-type-card {
+            padding: 24px;
+            background: var(--soft-gray);
+            border-radius: 16px;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: 2px solid transparent;
+        }
+
+        .assessment-type-card:hover {
+            border-color: var(--primary-blue);
+            transform: translateY(-3px);
+        }
+
+        .assessment-type-card h4 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text-dark);
+        }
+
+        .assessment-type-card p {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .question-container {
+            display: none;
+        }
+
+        .question-container.active {
+            display: block;
+        }
+
+        .question {
+            margin-bottom: 24px;
+            padding: 20px;
+            background: var(--soft-gray);
+            border-radius: 16px;
+        }
+
+        .question-text {
+            font-size: 16px;
+            margin-bottom: 16px;
+            color: var(--text-dark);
+        }
+
+        .options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .option {
+            padding: 12px 16px;
+            background: white;
+            border: 2px solid #E5E7EB;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 14px;
+            font-family: inherit;
+        }
+
+        .option:hover {
+            border-color: var(--primary-blue);
+        }
+
+        .option.selected {
+            border-color: var(--primary-blue);
+            background: var(--soft-blue);
+        }
+
+        .option input {
+            display: none;
+        }
+
+        .progress-bar {
+            height: 8px;
+            background: var(--soft-gray);
+            border-radius: 4px;
+            margin-bottom: 24px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary-blue), var(--deep-blue));
+            border-radius: 4px;
+            transition: width 0.3s;
+        }
+
+        /* 呼吸练习 */
+        .breathing-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 60px 20px;
+            background: var(--warm-white);
+            border-radius: 24px;
+            box-shadow: var(--shadow-soft);
+            margin-bottom: 30px;
+        }
+
+        .breathing-circle {
+            width: 200px;
+            height: 200px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--soft-blue), var(--primary-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+
+        .breathing-circle::before {
+            content: '';
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border-radius: 50%;
+            border: 4px solid var(--primary-blue);
+            animation: breathe 8s infinite;
+        }
+
+        @keyframes breathe {
+            0%, 100% { transform: scale(1); opacity: 0.5; }
+            50% { transform: scale(1.3); opacity: 0.2; }
+        }
+
+        .breathing-text {
+            font-size: 20px;
+            color: white;
+            font-weight: 500;
+            z-index: 1;
+        }
+
+        .breathing-instructions {
+            font-size: 18px;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .breathing-timer {
+            font-size: 48px;
+            font-weight: 700;
+            color: var(--deep-blue);
+            margin-bottom: 24px;
+        }
+
+        .breathing-btn {
+            padding: 16px 48px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            color: white;
+            border: none;
+            border-radius: 30px;
+            font-size: 18px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .breathing-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 6px 20px rgba(90, 155, 199, 0.4);
+        }
+
+        /* 疗愈方案 */
+        .plan-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 24px;
+        }
+
+        .plan-card {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            overflow: hidden;
+            transition: all 0.3s;
+        }
+
+        .plan-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-hover);
+        }
+
+        .plan-header {
+            padding: 24px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            color: white;
+        }
+
+        .plan-header h3 {
+            font-size: 20px;
+            margin-bottom: 8px;
+        }
+
+        .plan-header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .plan-body {
+            padding: 24px;
+        }
+
+        .plan-task {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .plan-task:last-child {
+            border-bottom: none;
+        }
+
+        .plan-task-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--soft-blue);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 18px;
+        }
+
+        .plan-task-info h4 {
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        .plan-task-info p {
+            font-size: 12px;
+            color: var(--text-light);
+        }
+
+        .plan-action {
+            display: block;
+            width: 100%;
+            padding: 14px;
+            margin-top: 16px;
+            background: var(--soft-blue);
+            color: var(--deep-blue);
+            border: none;
+            border-radius: 12px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-family: inherit;
+        }
+
+        .plan-action:hover {
+            background: var(--primary-blue);
+            color: white;
+        }
+
+        /* 预约咨询 */
+        .appointment-container {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            padding: 30px;
+        }
+
+        .appointment-form {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #E5E7EB;
+            border-radius: 12px;
+            font-size: 14px;
+            font-family: inherit;
+            transition: border-color 0.2s;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--primary-blue);
+        }
+
+        .form-textarea {
+            min-height: 120px;
+            resize: vertical;
+        }
+
+        .submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: inherit;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(90, 155, 199, 0.4);
+        }
+
+        /* 用户中心 */
+        .profile-container {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            padding: 30px;
+            margin-bottom: 30px;
+        }
+
+        .profile-header {
+            display: flex;
+            align-items: center;
+            gap: 24px;
+            padding-bottom: 24px;
+            border-bottom: 1px solid #E5E7EB;
+            margin-bottom: 24px;
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            color: white;
+        }
+
+        .profile-info h2 {
+            font-size: 24px;
+            color: var(--text-dark);
+            margin-bottom: 4px;
+        }
+
+        .profile-info p {
+            font-size: 14px;
+            color: var(--text-light);
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .stat-card {
+            text-align: center;
+            padding: 20px;
+            background: var(--soft-gray);
+            border-radius: 16px;
+        }
+
+        .stat-number {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--deep-blue);
+            margin-bottom: 4px;
+        }
+
+        .stat-label {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .settings-section {
+            padding: 20px 0;
+            border-bottom: 1px solid #E5E7EB;
+        }
+
+        .settings-section:last-child {
+            border-bottom: none;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 0;
+        }
+
+        .settings-item h4 {
+            font-size: 15px;
+            color: var(--text-dark);
+        }
+
+        .settings-item p {
+            font-size: 13px;
+            color: var(--text-light);
+        }
+
+        .toggle {
+            width: 48px;
+            height: 26px;
+            background: #E5E7EB;
+            border-radius: 13px;
+            position: relative;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle.active {
+            background: var(--primary-blue);
+        }
+
+        .toggle::after {
+            content: '';
+            position: absolute;
+            width: 22px;
+            height: 22px;
+            background: white;
+            border-radius: 50%;
+            top: 2px;
+            left: 2px;
+            transition: transform 0.3s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .toggle.active::after {
+            transform: translateX(22px);
+        }
+
+        /* 关于我们 */
+        .about-container {
+            background: var(--warm-white);
+            border-radius: 20px;
+            box-shadow: var(--shadow-soft);
+            padding: 40px;
+            text-align: center;
+        }
+
+        .about-logo {
+            font-size: 60px;
+            margin-bottom: 20px;
+        }
+
+        .about-container h2 {
+            font-size: 28px;
+            color: var(--text-dark);
+            margin-bottom: 16px;
+        }
+
+        .about-container p {
+            font-size: 16px;
+            color: var(--text-light);
+            max-width: 700px;
+            margin: 0 auto 30px;
+            line-height: 1.8;
+        }
+
+        .about-features {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 24px;
+            margin-top: 40px;
+        }
+
+        .about-feature {
+            padding: 24px;
+            background: var(--soft-gray);
+            border-radius: 16px;
+        }
+
+        .about-feature-icon {
+            font-size: 36px;
+            margin-bottom: 12px;
+        }
+
+        .about-feature h4 {
+            font-size: 16px;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .about-feature p {
+            font-size: 13px;
+            color: var(--text-light);
+            margin: 0;
+        }
+
+        /* 响应式 */
+        @media (max-width: 768px) {
+            .nav-links {
+                display: none;
+                position: absolute;
+                top: 70px;
+                left: 0;
+                right: 0;
+                background: white;
+                flex-direction: column;
+                padding: 20px;
+                box-shadow: var(--shadow-soft);
+            }
+
+            .nav-links.active {
+                display: flex;
+            }
+
+            .mobile-menu-btn {
+                display: block;
+            }
+
+            .chat-section {
+                grid-template-columns: 1fr;
+            }
+
+            .profile-stats {
+                grid-template-columns: 1fr;
+            }
+
+            .welcome-title {
+                font-size: 28px;
+            }
+        }
+
+        /* 弹窗 */
+        .modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            z-index: 2000;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal.active {
+            display: flex;
+        }
+
+        .modal-content {
+            background: white;
+            border-radius: 24px;
+            padding: 30px;
+            max-width: 500px;
+            width: 90%;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .modal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .modal-header h3 {
+            font-size: 20px;
+            color: var(--text-dark);
+        }
+
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: var(--text-light);
+        }
+
+        /* 结果显示 */
+        .result-container {
+            text-align: center;
+            padding: 30px;
+        }
+
+        .result-score {
+            font-size: 64px;
+            font-weight: 700;
+            color: var(--deep-blue);
+            margin-bottom: 10px;
+        }
+
+        .result-level {
+            font-size: 20px;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+        }
+
+        .result-desc {
+            font-size: 15px;
+            color: var(--text-light);
+            line-height: 1.8;
+        }
+    </style>
+</head>
+<body>
+    <!-- 导航栏 -->
+    <nav class="navbar">
+        <div class="logo">
+            <div class="logo-icon">💙</div>
+            <span class="logo-text">EmoHealer</span>
+        </div>
+        <div class="nav-links" id="navLinks">
+            <button class="nav-link active" onclick="showPage('home')">首页</button>
+            <button class="nav-link" onclick="showPage('chat')">情绪疗愈</button>
+            <button class="nav-link" onclick="showPage('report')">情绪报告</button>
+            <button class="nav-link" onclick="showPage('plan')">疗愈方案</button>
+            <button class="nav-link" onclick="showPage('breathing')">呼吸练习</button>
+            <button class="nav-link" onclick="showPage('assessment')">心理测评</button>
+            <button class="nav-link" onclick="showPage('journal')">情绪日记</button>
+            <button class="nav-link" onclick="showPage('appointment')">预约咨询</button>
+            <button class="nav-link" onclick="showPage('profile')">用户中心</button>
+            <button class="nav-link" onclick="showPage('about')">关于我们</button>
+        </div>
+        <button class="mobile-menu-btn" onclick="toggleMobileMenu()">☰</button>
+    </nav>
+
+    <!-- 主内容区 -->
+    <main class="main-container">
+        
+        <!-- 首页 -->
+        <div class="page-section active" id="page-home">
+            <section class="welcome-section">
+                <h1 class="welcome-title">你好，我是<span>情绪疗愈助手</span></h1>
+                <p class="welcome-subtitle">在这里，你可以安全地倾诉内心的感受。我会陪伴你、倾听你，帮助你更好地理解和管理自己的情绪。</p>
+            </section>
+
+            <section class="features-grid">
+                <div class="feature-card" onclick="showPage('chat')">
+                    <div class="feature-icon blue">🗣️</div>
+                    <h3 class="feature-title">智能情绪对话</h3>
+                    <p class="feature-desc">基于CBT认知行为疗法，通过AI对话引导你认识和管理情绪。</p>
+                </div>
+                <div class="feature-card" onclick="showPage('report')">
+                    <div class="feature-icon coral">📊</div>
+                    <h3 class="feature-title">情绪数据分析</h3>
+                    <p class="feature-desc">可视化你的情绪变化趋势，识别情绪触发因素。</p>
+                </div>
+                <div class="feature-card" onclick="showPage('plan')">
+                    <div class="feature-icon green">🧘</div>
+                    <h3 class="feature-title">个性化疗愈方案</h3>
+                    <p class="feature-desc">根据你的情绪状态，AI智能推荐每日疗愈任务。</p>
+                </div>
+                <div class="feature-card" onclick="showPage('breathing')">
+                    <div class="feature-icon purple">🫁</div>
+                    <h3 class="feature-title">呼吸练习</h3>
+                    <p class="feature-desc">4-7-8放松呼吸法，帮助缓解焦虑和压力。</p>
+                </div>
+            </section>
+
+            <section class="quick-actions">
+                <h2 class="section-title">🌟 快速开始</h2>
+                <div class="actions-grid">
+                    <button class="action-btn" onclick="showPage('chat')">
+                        <div class="action-icon" style="background: #E8F4FC;">💬</div>
+                        <div class="action-info">
+                            <h4>倾诉心情</h4>
+                            <p>和AI聊聊你的感受</p>
+                        </div>
+                    </button>
+                    <button class="action-btn" onclick="showPage('journal')">
+                        <div class="action-icon" style="background: #FDF0ED;">📝</div>
+                        <div class="action-info">
+                            <h4>记录日记</h4>
+                            <p>写下今日情绪</p>
+                        </div>
+                    </button>
+                    <button class="action-btn" onclick="showPage('assessment')">
+                        <div class="action-icon" style="background: #E8F5F0;">📋</div>
+                        <div class="action-info">
+                            <h4>心理测评</h4>
+                            <p>了解情绪状态</p>
+                        </div>
+                    </button>
+                    <button class="action-btn" onclick="showPage('appointment')">
+                        <div class="action-icon" style="background: #F0EDF5;">📅</div>
+                        <div class="action-info">
+                            <h4>预约咨询</h4>
+                            <p>专业心理师指导</p>
+                        </div>
+                    </button>
+                </div>
+            </section>
+        </div>
+
+        <!-- 情绪疗愈/对话页面 -->
+        <div class="page-section" id="page-chat">
+            <section class="chat-section" style="grid-template-columns: 1fr;">
+                <div class="chat-container">
+                    <div class="chat-header">
+                        <div class="ai-avatar">💙</div>
+                        <div class="chat-header-info">
+                            <h3>疗愈助手</h3>
+                            <p>CBT情绪疗愈 | 随时倾听</p>
+                        </div>
+                        <div class="chat-status">
+                            <span class="status-dot"></span>
+                            在线陪伴
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatMessages">
+                        <div class="message ai">
+                            <div class="message-avatar">💙</div>
+                            <div class="message-content">
+                                <div class="emotion-tag">温暖欢迎</div>
+                                你好，很高兴见到你！我是你的情绪疗愈助手 💙<br><br>
+                                今天过得怎么样？有什么想倾诉的吗？<br>
+                                我在这里随时倾听你，支持你。
+                            </div>
+                        </div>
+                    </div>
+                    <div class="chat-input-area">
+                        <div class="emotion-selector">
+                            <button class="emotion-btn" onclick="selectEmotion('😊 开心')">😊 开心</button>
+                            <button class="emotion-btn" onclick="selectEmotion('😢 难过')">😢 难过</button>
+                            <button class="emotion-btn" onclick="selectEmotion('😰 焦虑')">😰 焦虑</button>
+                            <button class="emotion-btn" onclick="selectEmotion('😠 愤怒')">😠 愤怒</button>
+                            <button class="emotion-btn" onclick="selectEmotion('😴 疲惫')">😴 疲惫</button>
+                        </div>
+                        <div class="input-wrapper">
+                            <textarea class="chat-input" id="chatInput" placeholder="在这里倾诉你的心情..." rows="1"></textarea>
+                            <button class="send-btn" id="sendBtn" onclick="sendMessage()">➤</button>
+                        </div>
+                    </div>
+                </div>
+            </section>
+        </div>
+
+        <!-- 情绪报告页面 -->
+        <div class="page-section" id="page-report">
+            <section class="chart-container">
+                <div class="chart-header">
+                    <h3 class="chart-title">📈 情绪趋势分析</h3>
+                    <div class="chart-period">
+                        <button class="period-btn" onclick="changePeriod('week')">周</button>
+                        <button class="period-btn active" onclick="changePeriod('month')">月</button>
+                        <button class="period-btn" onclick="changePeriod('year')">年</button>
+                    </div>
+                </div>
+                <div id="emotionChart"></div>
+                <div class="chart-legend">
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #7EB8DA;"></span>
+                        整体情绪
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #E8A598;"></span>
+                        焦虑指数
+                    </div>
+                    <div class="legend-item">
+                        <span class="legend-dot" style="background: #9DD6C3;"></span>
+                        幸福指数
+                    </div>
+                </div>
+            </section>
+
+            <!-- 情绪日历 -->
+            <div class="calendar-container" style="margin-top: 30px;">
+                <div class="calendar-header">
+                    <h3>📅 情绪日历</h3>
+                    <div class="calendar-nav">
+                        <button onclick="changeMonth(-1)">◀</button>
+                        <span class="calendar-title" id="calendarTitle">2026年3月</span>
+                        <button onclick="changeMonth(1)">▶</button>
+                    </div>
+                </div>
+                <div class="calendar-grid" id="calendarGrid">
+                    <!-- 日历内容由JS生成 -->
+                </div>
+            </div>
+        </div>
+
+        <!-- 疗愈方案页面 -->
+        <div class="page-section" id="page-plan">
+            <h2 class="section-title">🌸 个性化疗愈方案</h2>
+            <div class="plan-grid">
+                <div class="plan-card">
+                    <div class="plan-header">
+                        <h3>🌅 晨间唤醒计划</h3>
+                        <p>适合：需要提升能量的人群</p>
+                    </div>
+                    <div class="plan-body">
+                        <div class="plan-task">
+                            <div class="plan-task-icon">🧘</div>
+                            <div class="plan-task-info">
+                                <h4>晨间冥想</h4>
+                                <p>5分钟正念冥想</p>
+                            </div>
+                        </div>
+                        <div class="plan-task">
+                            <div class="plan-task-icon">📝</div>
+                            <div class="plan-task-info">
+                                <h4>感恩日记</h4>
+                                <p>记录3件感恩的事</p>
+                            </div>
+                        </div>
+                        <div class="plan-task">
+                            <div class="plan-task-icon">🫁</div>
+                            <div class="plan-task-info">
+                                <h4>深呼吸练习</h4>
+                                <p>4-7-8呼吸法3轮</p>
+                            </div>
+                        </div>
+                        <button class="plan-action" onclick="showPage('chat')">开始今日计划</button>
+                    </div>
+                </div>
+
+                <div class="plan-card">
+                    <div class="plan-header" style="background: linear-gradient(135deg, #9DD6C3, #6BC5A8);">
+                        <h3>🌙 夜间修复计划</h3>
+                        <p>适合：失眠焦虑人群</p>
+                    </div>
+                    <div class="plan-body">
+                        <div class="plan-task">
+                            <div class="plan-task-icon">📝</div>
+                            <div class="plan-task-info">
+                                <h4>情绪复盘</h4>
+                                <p>回顾今日情绪</p>
+                            </div>
+                        </div>
+                        <div class="plan-task">
+                            <div class="plan-task-icon">🛁</div>
+                            <div class="plan-task-info">
+                                <h4>放松沐浴</h4>
+                                <p>15分钟放松时光</p>
+                            </div>
+                        </div>
+                        <div class="plan-task">
+                            <div class="plan-task-icon">😴</div>
+                            <div class="plan-task-info">
+                                <h4>睡眠冥想</h4>
+                                <p>10分钟引导入睡</p>
+                            </div>
+                        </div>
+                        <button class="plan-action" onclick="showPage('chat')">开始夜间修复</button>
+                    </div>
+                </div>
+
+                <div class="plan-card">
+                    <div class="plan-header" style="background: linear-gradient(135deg, #B8A9D9, #9583C9);">
+                        <h3>💪 压力缓解计划</h3>
+                        <p>适合：高压力人群</p>
+                    </div>
+                    <div class="plan-body">
+                        <div class="plan-task">
+                            <div class="plan-task-icon">🫁</div>
+                            <div class="plan-task-info">
+                                <h4>即时呼吸</h4>
+                                <p>紧张时深呼吸</p>
+                            </div>
+                        </div>
+                        <div class="plan-task">
+                            <div class="plan-task-icon">🏃</div>
+                            <div class="plan-task-info">
+                                <h4>运动释放</h4>
+                                <p>15分钟轻度运动</p>
+                            </div>
+                        </div>
+                        <div class="plan-task">
+                            <div class="plan-task-icon">💬</div>
+                            <div class="plan-task-info">
+                                <h4>情绪倾诉</h4>
+                                <p>与AI对话释放</p>
+                            </div>
+                        </div>
+                        <button class="plan-action" onclick="showPage('chat')">开始压力缓解</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 呼吸练习页面 -->
+        <div class="page-section" id="page-breathing">
+            <div class="breathing-container">
+                <div class="breathing-circle" id="breathingCircle">
+                    <span class="breathing-text" id="breathingText">准备</span>
+                </div>
+                <div class="breathing-instructions" id="breathingInstructions">
+                    4-7-8 呼吸法：吸气4秒 → 屏息7秒 → 呼气8秒
+                </div>
+                <div class="breathing-timer" id="breathingTimer">0</div>
+                <button class="breathing-btn" id="breathingBtn" onclick="toggleBreathing()">
+                    开始练习
+                </button>
+            </div>
+        </div>
+
+        <!-- 心理测评页面 -->
+        <div class="page-section" id="page-assessment">
+            <div class="assessment-container">
+                <div class="assessment-intro">
+                    <h2>📋 心理测评</h2>
+                    <p>通过科学测评，了解你的情绪状态和心理健康水平。所有测评均为匿名，结果仅供参考。</p>
+                </div>
+                
+                <div class="assessment-types" id="assessmentTypes">
+                    <div class="assessment-type-card" onclick="startAssessment('PHQ-9')">
+                        <h4>PHQ-9 抑郁症筛查量表</h4>
+                        <p>评估过去两周的抑郁症状严重程度，共9题，约3分钟完成</p>
+                    </div>
+                    <div class="assessment-type-card" onclick="startAssessment('GAD-7')">
+                        <h4>GAD-7 焦虑症筛查量表</h4>
+                        <p>评估过去两周的焦虑症状严重程度，共7题，约2分钟完成</p>
+                    </div>
+                    <div class="assessment-type-card" onclick="startAssessment('PSS')">
+                        <h4>PSS-10 压力感知量表</h4>
+                        <p>评估过去一个月的压力感知水平，共10题，约2分钟完成</p>
+                    </div>
+                </div>
+
+                <div class="question-container" id="questionContainer">
+                    <div class="progress-bar">
+                        <div class="progress-fill" id="progressFill" style="width: 0%;"></div>
+                    </div>
+                    <div id="questionContent"></div>
+                </div>
+
+                <div class="result-container" id="resultContainer" style="display: none;">
+                    <div class="result-score" id="resultScore">0</div>
+                    <div class="result-level" id="resultLevel">暂无结果</div>
+                    <div class="result-desc" id="resultDesc"></div>
+                    <button class="submit-btn" onclick="resetAssessment()" style="margin-top: 20px; max-width: 200px;">重新测评</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 情绪日记页面 -->
+        <div class="page-section" id="page-journal">
+            <div class="journal-container">
+                <h2 class="section-title">📝 情绪日记</h2>
+                
+                <textarea class="journal-input" id="journalInput" placeholder="在这里写下今天的心情、发生的事情、你的感受...&#10;&#10;写作是情绪表达和自我疗愈的好方式。"></textarea>
+                
+                <div class="journal-tags">
+                    <button class="journal-tag" onclick="toggleTag(this)">😊 开心</button>
+                    <button class="journal-tag" onclick="toggleTag(this)">😢 难过</button>
+                    <button class="journal-tag" onclick="toggleTag(this)">😰 焦虑</button>
+                    <button class="journal-tag" onclick="toggleTag(this)">😠 愤怒</button>
+                    <button class="journal-tag" onclick="toggleTag(this)">😴 疲惫</button>
+                    <button class="journal-tag" onclick="toggleTag(this)">🤔 困惑</button>
+                    <button class="journal-tag" onclick="toggleTag(this)">🥰 感恩</button>
+                </div>
+                
+                <button class="journal-btn" onclick="saveJournal()">保存日记</button>
+
+                <div class="journal-history">
+                    <h3 style="margin-bottom: 16px; color: var(--text-dark);">📚 历史记录</h3>
+                    <div id="journalList">
+                        <!-- 日记列表由JS生成 -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 预约咨询页面 -->
+        <div class="page-section" id="page-appointment">
+            <div class="appointment-container">
+                <h2 class="section-title">📅 预约咨询</h2>
+                
+                <div class="appointment-form">
+                    <div class="form-group">
+                        <label class="form-label">您的姓名</label>
+                        <input type="text" class="form-input" id="appointmentName" placeholder="请输入姓名">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">联系方式</label>
+                        <input type="tel" class="form-input" id="appointmentPhone" placeholder="请输入手机号">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">咨询类型</label>
+                        <select class="form-select" id="appointmentType">
+                            <option value="">请选择咨询类型</option>
+                            <option value="情绪困扰">情绪困扰</option>
+                            <option value="人际关系">人际关系</option>
+                            <option value="职业发展">职业发展</option>
+                            <option value="亲密关系">亲密关系</option>
+                            <option value="自我成长">自我成长</option>
+                            <option value="其他">其他</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">预约日期</label>
+                        <input type="date" class="form-input" id="appointmentDate">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">详细描述</label>
+                        <textarea class="form-textarea" id="appointmentDesc" placeholder="请简要描述您希望咨询的问题..."></textarea>
+                    </div>
+                    <button class="submit-btn" onclick="submitAppointment()">提交预约</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 用户中心页面 -->
+        <div class="page-section" id="page-profile">
+            <div class="profile-container">
+                <div class="profile-header">
+                    <div class="profile-avatar">👤</div>
+                    <div class="profile-info">
+                        <h2>用户</h2>
+                        <p>注册时间：2026-03-01</p>
+                    </div>
+                </div>
+                
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="statChats">16</div>
+                        <div class="stat-label">对话次数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statJournals">3</div>
+                        <div class="stat-label">日记篇数</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statDays">7</div>
+                        <div class="stat-label">使用天数</div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4 style="margin-bottom: 16px; color: var(--text-dark);">通知设置</h4>
+                    <div class="settings-item">
+                        <div>
+                            <h4>每日情绪提醒</h4>
+                            <p>每天固定时间提醒记录情绪</p>
+                        </div>
+                        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                    <div class="settings-item">
+                        <div>
+                            <h4>AI回复通知</h4>
+                            <p>收到AI回复时推送通知</p>
+                        </div>
+                        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                </div>
+
+                <div class="settings-section">
+                    <h4 style="margin-bottom: 16px; color: var(--text-dark);">隐私设置</h4>
+                    <div class="settings-item">
+                        <div>
+                            <h4>数据匿名化</h4>
+                            <p>匿名存储对话记录以保护隐私</p>
+                        </div>
+                        <div class="toggle active" onclick="this.classList.toggle('active')"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 关于我们页面 -->
+        <div class="page-section" id="page-about">
+            <div class="about-container">
+                <div class="about-logo">💙</div>
+                <h2>EmoHealer 情绪疗愈平台</h2>
+                <p>EmoHealer 是一个基于人工智能的情绪疗愈平台，致力于为用户提供温暖、专业、便捷的心理健康服务。我们相信每个人都值得被倾听和理解。</p>
+                
+                <div class="about-features">
+                    <div class="about-feature">
+                        <div class="about-feature-icon">🧠</div>
+                        <h4>AI智能对话</h4>
+                        <p>基于CBT认知行为疗法，提供专业的情绪支持</p>
+                    </div>
+                    <div class="about-feature">
+                        <div class="about-feature-icon">📊</div>
+                        <h4>情绪追踪</h4>
+                        <p>科学记录和分析情绪变化，识别人生模式</p>
+                    </div>
+                    <div class="about-feature">
+                        <div class="about-feature-icon">🧘</div>
+                        <h4>疗愈方案</h4>
+                        <p>个性化推荐冥想、呼吸练习等疗愈方法</p>
+                    </div>
+                    <div class="about-feature">
+                        <div class="about-feature-icon">🔒</div>
+                        <h4>隐私保护</h4>
+                        <p>严格保护用户隐私，数据安全加密存储</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- 弹窗 -->
+    <div class="modal" id="journalModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>日记详情</h3>
+                <button class="modal-close" onclick="closeModal()">×</button>
+            </div>
+            <div id="modalBody"></div>
+        </div>
+    </div>
+
+    <script>
+        // ==================== 全局变量 ====================
+        const API_BASE = 'http://localhost:8088/api';
+        let currentUserId = 1;
+        let currentEmotion = null;
+        let currentPeriod = 'month';
+        let currentPage = 'home';
+        let currentMonth = new Date();
+        
+        // 呼吸练习变量
+        let breathingInterval = null;
+        let isBreathing = false;
+        let breathingPhase = 0;
+        let breathingCount = 0;
+
+        // 测评变量
+        let currentAssessment = null;
+        let currentQuestion = 0;
+        let assessmentAnswers = [];
+
+        // AI回复
+        const aiResponses = {
+            '😊 开心': [
+                "听到你今天心情不错，真为你高兴！有什么特别的原因吗？",
+                "看到你开心，我也感到很开心！愿意和我分享是什么让你这么开心吗？",
+                "积极的情绪真的很美好。你是如何保持这样好心情的呢？"
+            ],
+            '😢 难过': [
+                "我在这里倾听你。慢慢说，不要着急。",
+                "我能感受到你现在的难过。愿意说说发生了什么吗？",
+                "难过的时候说出来会好受一些。我在这里陪着你。"
+            ],
+            '😰 焦虑': [
+                "焦虑只是一种情绪，它会来的，也会走的。让我们一起面对它。",
+                "我能感觉到你有些不安。深呼吸，告诉我是什么让你感到焦虑？",
+                "焦虑的时候，我们可以试着把注意力放在呼吸上。你现在方便深呼吸几次吗？"
+            ],
+            '😠 愤怒': [
+                "愤怒是一种很有力量的情绪，它可能在告诉我们某些需求没有被满足。",
+                "我理解你现在很愤怒。愿意说说是什么让你生气吗？",
+                "愤怒是可以被表达的。试着把让你生气的事情告诉我，我们一起看看怎么处理。"
+            ],
+            '😴 疲惫': [
+                "疲惫的时候，允许自己休息是很重要的。",
+                "你看起来很累了。今天一定很辛苦吧？",
+                "适当休息能帮助我们更好地面对挑战。你最近睡眠质量怎么样？"
+            ],
+            'default': [
+                "我在这里倾听你。慢慢说，不要着急。",
+                "谢谢你的分享。你最近生活中有什么变化吗？",
+                "我理解你的感受。我们可以聊聊是什么让你有这种感觉？"
+            ]
+        };
+
+        // ==================== 页面导航 ====================
+        function showPage(pageId) {
+            // 隐藏所有页面
+            document.querySelectorAll('.page-section').forEach(page => {
+                page.classList.remove('active');
+            });
+            
+            // 显示目标页面
+            document.getElementById('page-' + pageId).classList.add('active');
+            
+            // 更新导航状态
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            // 查找并激活对应的导航按钮
+            const navButtons = document.querySelectorAll('.nav-link');
+            const pageIndex = ['home', 'chat', 'report', 'plan', 'breathing', 'assessment', 'journal', 'appointment', 'profile', 'about'].indexOf(pageId);
+            if (navButtons[pageIndex]) {
+                navButtons[pageIndex].classList.add('active');
+            }
+            
+            currentPage = pageId;
+            
+            // 初始化页面相关功能
+            if (pageId === 'report') {
+                initChart();
+                renderCalendar();
+            } else if (pageId === 'breathing') {
+                // 呼吸练习页面
+            } else if (pageId === 'journal') {
+                renderJournalList();
+            } else if (pageId === 'chat') {
+                initChart();
+            }
+            
+            // 关闭移动端菜单
+            document.getElementById('navLinks').classList.remove('active');
+        }
+
+        function toggleMobileMenu() {
+            document.getElementById('navLinks').classList.toggle('active');
+        }
+
+        // ==================== 对话功能 ====================
+        function selectEmotion(emotion) {
+            currentEmotion = emotion;
+            document.querySelectorAll('.emotion-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === emotion) {
+                    btn.classList.add('active');
+                }
+            });
+        }
+
+        function addMessage(text, sender, emotion = '') {
+            const messages = document.getElementById('chatMessages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${sender}`;
+            
+            const avatar = sender === 'ai' ? '💙' : '👤';
+            const emotionTag = emotion ? `<div class="emotion-tag">${emotion}</div>` : '';
+            
+            messageDiv.innerHTML = `
+                <div class="message-avatar">${avatar}</div>
+                <div class="message-content">${emotionTag}${text}</div>
+            `;
+            
+            messages.appendChild(messageDiv);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function showTypingIndicator() {
+            const messages = document.getElementById('chatMessages');
+            const indicator = document.createElement('div');
+            indicator.className = 'typing-indicator';
+            indicator.id = 'typingIndicator';
+            indicator.innerHTML = `
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+                <div class="typing-dot"></div>
+            `;
+            messages.appendChild(indicator);
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        function removeTypingIndicator() {
+            const indicator = document.getElementById('typingIndicator');
+            if (indicator) {
+                indicator.remove();
+            }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            
+            if (!message) return;
+
+            const sendBtn = document.getElementById('sendBtn');
+            sendBtn.disabled = true;
+
+            addMessage(message, 'user');
+            input.value = '';
+            input.style.height = 'auto';
+
+            showTypingIndicator();
+
+            try {
+                const response = await fetch(`${API_BASE}/chat/send`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        message: message,
+                        emotion: currentEmotion || null
+                    })
+                });
+                
+                const result = await response.json();
+                removeTypingIndicator();
+                
+                // 兼容两种响应格式：直接对象或 {code:200, data:{...}}
+                const replyData = result.data || result;
+                
+                if (replyData.is_crisis || result.is_crisis) {
+                    addMessage('⚠️ 检测到您可能处于危机状态，请立即寻求专业帮助。\n\n紧急求助热线：400-161-9995', 'ai', '危机预警');
+                }
+                
+                if (replyData.reply) {
+                    addMessage(replyData.reply, 'ai', replyData.emotion);
+                }
+                
+            } catch (error) {
+                console.error('发送消息失败:', error);
+                removeTypingIndicator();
+                
+                // 显示错误提示
+                addMessage('⚠️ 无法连接到AI服务，请确保后端服务已启动。\n\n错误信息: ' + error.message, 'ai', '系统提示');
+                
+                // 不使用fallback，保持状态调试
+                // const responses = aiResponses[currentEmotion] || aiResponses['default'];
+                // const response = responses[Math.floor(Math.random() * responses.length)];
+                // addMessage(response, 'ai', '温暖回应');
+            }
+            
+            sendBtn.disabled = false;
+            document.getElementById('chatInput').focus();
+        }
+
+        // 回车发送
+        document.getElementById('chatInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // 输入框自动调整高度
+        document.getElementById('chatInput').addEventListener('input', function() {
+            this.style.height = 'auto';
+            this.style.height = Math.min(this.scrollHeight, 120) + 'px';
+        });
+
+        // ==================== 图表功能 ====================
+        function initChart() {
+            setTimeout(function() {
+                const chartDom = document.getElementById('emotionChart');
+                if (!chartDom) return;
+                
+                // 销毁已存在的图表实例
+                try {
+                    const oldChart = echarts.getInstanceByDom(chartDom);
+                    if (oldChart) oldChart.dispose();
+                } catch(e) {}
+                
+                const myChart = echarts.init(chartDom);
+
+                fetch(`${API_BASE}/emotion/trend`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: currentUserId, period: currentPeriod })
+                })
+                .then(res => res.json())
+                .then(result => {
+                    let data;
+                    if (result.code === 200 && result.data && result.data.length > 0) {
+                        data = result.data;
+                    } else {
+                        data = generateMockData();
+                    }
+                    
+                    const days = data.map(d => d.date);
+                    const overall = data.map(d => d.overall);
+                    const anxiety = data.map(d => d.anxiety);
+                    const happiness = data.map(d => d.happiness);
+
+                    const option = {
+                        tooltip: { trigger: 'axis' },
+                        grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+                        xAxis: {
+                            type: 'category',
+                            boundaryGap: false,
+                            data: days,
+                            axisLine: { lineStyle: { color: '#E2E8F0' } },
+                            axisLabel: { color: '#718096', fontSize: 11 }
+                        },
+                        yAxis: {
+                            type: 'value',
+                            min: 0,
+                            max: 100,
+                            axisLabel: { color: '#718096' },
+                            splitLine: { lineStyle: { color: '#F0F0F0' } }
+                        },
+                        series: [
+                            {
+                                name: '整体情绪',
+                                type: 'line',
+                                smooth: true,
+                                data: overall,
+                                lineStyle: { width: 3, color: '#7EB8DA' },
+                                areaStyle: {
+                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                        { offset: 0, color: 'rgba(126, 184, 218, 0.4)' },
+                                        { offset: 1, color: 'rgba(126, 184, 218, 0.05)' }
+                                    ])
+                                },
+                                symbol: 'circle', symbolSize: 8, itemStyle: { color: '#7EB8DA', borderWidth: 2, borderColor: '#fff' }
+                            },
+                            {
+                                name: '焦虑指数',
+                                type: 'line',
+                                smooth: true,
+                                data: anxiety,
+                                lineStyle: { width: 2, color: '#E8A598' },
+                                symbol: 'circle', symbolSize: 6, itemStyle: { color: '#E8A598', borderWidth: 2, borderColor: '#fff' }
+                            },
+                            {
+                                name: '幸福指数',
+                                type: 'line',
+                                smooth: true,
+                                data: happiness,
+                                lineStyle: { width: 2, color: '#9DD6C3' },
+                                symbol: 'circle', symbolSize: 6, itemStyle: { color: '#9DD6C3', borderWidth: 2, borderColor: '#fff' }
+                            }
+                        ]
+                    };
+                    myChart.setOption(option);
+                    window.addEventListener('resize', function() { myChart.resize(); });
+                })
+                .catch(function(err) { console.error('获取情绪数据失败:', err); });
+            }, 200);
+        }
+
+        function generateMockData() {
+            const data = [];
+            const days = currentPeriod === 'week' ? 7 : currentPeriod === 'year' ? 12 : 30;
+            for (let i = 0; i < days; i++) {
+                const date = new Date();
+                date.setDate(date.getDate() - (days - i - 1));
+                data.push({
+                    date: currentPeriod === 'year' ? (i + 1) + '月' : date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }),
+                    overall: 50 + Math.random() * 30,
+                    anxiety: 20 + Math.random() * 40,
+                    happiness: 40 + Math.random() * 40
+                });
+            }
+            return data;
+        }
+
+        function changePeriod(period) {
+            currentPeriod = period;
+            document.querySelectorAll('.period-btn').forEach(btn => {
+                btn.classList.remove('active');
+                if (btn.textContent === (period === 'week' ? '周' : period === 'month' ? '月' : '年')) {
+                    btn.classList.add('active');
+                }
+            });
+            initChart();
+        }
+
+        // ==================== 日历功能 ====================
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            const title = document.getElementById('calendarTitle');
+            
+            const year = currentMonth.getFullYear();
+            const month = currentMonth.getMonth();
+            
+            title.textContent = `${year}年${month + 1}月`;
+            
+            const firstDay = new Date(year, month, 1).getDay();
+            const daysInMonth = new Date(year, month + 1, 0).getDate();
+            const today = new Date();
+            
+            let html = '';
+            ['日', '一', '二', '三', '四', '五', '六'].forEach(day => {
+                html += `<div class="calendar-day-header">${day}</div>`;
+            });
+            
+            for (let i = 0; i < firstDay; i++) {
+                html += '<div class="calendar-day"></div>';
+            }
+            
+            for (let day = 1; day <= daysInMonth; day++) {
+                const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+                const randomEmotion = ['happy', 'sad', 'anxious', 'angry', 'tired'][Math.floor(Math.random() * 5)];
+                const hasData = Math.random() > 0.5;
+                
+                html += `
+                    <div class="calendar-day ${isToday ? 'today' : ''} ${hasData ? 'has-data' : ''}" onclick="showDateDetail(${year}, ${month + 1}, ${day})">
+                        ${day}
+                        ${hasData ? `<div class="emotion-dot emotion-${randomEmotion}"></div>` : ''}
+                    </div>
+                `;
+            }
+            
+            grid.innerHTML = html;
+        }
+
+        function changeMonth(delta) {
+            currentMonth.setMonth(currentMonth.getMonth() + delta);
+            renderCalendar();
+        }
+
+        function showDateDetail(year, month, day) {
+            alert(`${year}年${month}月${day}日的情绪详情\n\n情绪状态: 良好\n整体评分: 75分\n记录: 3条`);
+        }
+
+        // ==================== 呼吸练习 ====================
+        function toggleBreathing() {
+            const btn = document.getElementById('breathingBtn');
+            const text = document.getElementById('breathingText');
+            const instructions = document.getElementById('breathingInstructions');
+            
+            if (isBreathing) {
+                // 停止
+                clearInterval(breathingInterval);
+                isBreathing = false;
+                breathingCount = 0;
+                breathingPhase = 0;
+                btn.textContent = '开始练习';
+                text.textContent = '准备';
+                instructions.textContent = '4-7-8 呼吸法：吸气4秒 → 屏息7秒 → 呼气8秒';
+                document.getElementById('breathingTimer').textContent = '0';
+                document.getElementById('breathingCircle').style.animationPlayState = 'paused';
+            } else {
+                // 开始
+                isBreathing = true;
+                btn.textContent = '停止';
+                breathingPhase = 1;
+                breathingCount = 4;
+                
+                breathingInterval = setInterval(() => {
+                    breathingCount--;
+                    
+                    if (breathingCount <= 0) {
+                        breathingPhase++;
+                        if (breathingPhase > 3) {
+                            breathingPhase = 1;
+                            breathingCount = 4;
+                        } else if (breathingPhase === 2) {
+                            breathingCount = 7;
+                        } else if (breathingPhase === 3) {
+                            breathingCount = 8;
+                        }
+                    }
+                    
+                    // 更新显示
+                    const circle = document.getElementById('breathingCircle');
+                    if (breathingPhase === 1) {
+                        text.textContent = '吸气';
+                        circle.style.transform = 'scale(1.3)';
+                    } else if (breathingPhase === 2) {
+                        text.textContent = '屏息';
+                        circle.style.transform = 'scale(1.3)';
+                    } else {
+                        text.textContent = '呼气';
+                        circle.style.transform = 'scale(1)';
+                    }
+                    
+                    document.getElementById('breathingTimer').textContent = breathingCount;
+                }, 1000);
+                
+                document.getElementById('breathingCircle').style.animationPlayState = 'running';
+            }
+        }
+
+        // ==================== 心理测评 ====================
+        const assessments = {
+            'PHQ-9': {
+                title: 'PHQ-9 抑郁症筛查量表',
+                questions: [
+                    '做事时提不起劲或没有兴趣',
+                    '感到心情低落、沮丧或绝望',
+                    '入睡困难、睡不安稳或睡得过多',
+                    '感觉疲倦或没有活力',
+                    '食欲不振或吃太多',
+                    '觉得自己很糟或觉得自己很失败',
+                    '难以集中注意力',
+                    '动作或说话速度缓慢，或相反',
+                    '有不如死掉或用某种方式伤害自己的念头'
+                ],
+                levels: [
+                    { max: 4, name: '无抑郁', desc: '没有抑郁症状，继续保持良好的心理状态。' },
+                    { max: 9, name: '轻度抑郁', desc: '可能有轻微抑郁情绪，建议多参加户外活动，保持规律作息。' },
+                    { max: 14, name: '中度抑郁', desc: '存在一定程度的抑郁症状，建议咨询专业心理医生。' },
+                    { max: 19, name: '中重度抑郁', desc: '抑郁症状较为明显，建议尽快寻求专业帮助。' },
+                    { max: 100, name: '重度抑郁', desc: '抑郁症状严重，建议立即联系专业心理医生进行诊治。' }
+                ]
+            },
+            'GAD-7': {
+                title: 'GAD-7 焦虑症筛查量表',
+                questions: [
+                    '感到紧张、焦虑或烦躁',
+                    '不能停止或控制担忧',
+                    '对各种事情担忧过多',
+                    '很难放松下来',
+                    '由于不安而无法静坐',
+                    '容易烦恼或易被激怒',
+                    '感到害怕，好像有什么可怕的事要发生'
+                ],
+                levels: [
+                    { max: 4, name: '无焦虑', desc: '没有焦虑症状，情绪状态良好。' },
+                    { max: 9, name: '轻度焦虑', desc: '可能有轻微焦虑情绪，学会放松和调节。' },
+                    { max: 14, name: '中度焦虑', desc: '存在一定程度的焦虑症状，建议学习压力管理技巧。' },
+                    { max: 100, name: '重度焦虑', desc: '焦虑症状明显，建议寻求专业心理帮助。' }
+                ]
+            },
+            'PSS': {
+                title: 'PSS-10 压力感知量表',
+                questions: [
+                    '在过去一个月内，您有多少次感到无法控制生活中的重要事情？',
+                    '在过去一个月内，您有多少次感到自信有能力处理个人问题？',
+                    '在过去一个月内，您有多少次感到事情按您的方式发展？',
+                    '在过去一个月内，您有多少次感到无法应对必须做的事情？',
+                    '在过去一个月内，您有多少次能够控制烦恼情绪？',
+                    '在过去一个月内，您有多少次感到自己能胜任？',
+                    '在过去一个月内，您有多少次对事情发展感到满意？',
+                    '在过去一个月内，您有多少次感到有困难无法克服？',
+                    '在过去一个月内，您有多少次感到问题堆积无法解决？',
+                    '在过去一个月内，您有多少次感到一切都在掌握中？'
+                ],
+                levels: [
+                    { max: 13, name: '低压力', desc: '压力水平较低，保持良好的生活节奏。' },
+                    { max: 26, name: '中等压力', desc: '压力水平适中，注意劳逸结合。' },
+                    { max: 100, name: '高压力', desc: '压力水平较高，建议适当放松，必要时寻求帮助。' }
+                ]
+            }
+        };
+
+        function startAssessment(type) {
+            currentAssessment = type;
+            currentQuestion = 0;
+            assessmentAnswers = [];
+            
+            document.getElementById('assessmentTypes').style.display = 'none';
+            document.getElementById('questionContainer').classList.add('active');
+            document.getElementById('resultContainer').style.display = 'none';
+            
+            renderQuestion();
+        }
+
+        function renderQuestion() {
+            const assessment = assessments[currentAssessment];
+            const question = assessment.questions[currentQuestion];
+            
+            document.getElementById('progressFill').style.width = ((currentQuestion) / assessment.questions.length * 100) + '%';
+            
+            let html = `
+                <div class="question">
+                    <div class="question-text">${currentQuestion + 1}. ${question}</div>
+                    <div class="options">
+            `;
+            
+            const options = ['完全没有', '几天一次', '一半以上日子', '几乎每天'];
+            options.forEach((opt, idx) => {
+                html += `
+                    <label class="option" onclick="selectOption(${idx})">
+                        <input type="radio" name="answer" value="${idx}">
+                        ${opt}
+                    </label>
+                `;
+            });
+            
+            html += `
+                    </div>
+                </div>
+                <button class="submit-btn" onclick="nextQuestion()" style="max-width: 200px;">${currentQuestion === assessment.questions.length - 1 ? '提交' : '下一题'}</button>
+            `;
+            
+            document.getElementById('questionContent').innerHTML = html;
+        }
+
+        function selectOption(idx) {
+            document.querySelectorAll('.option').forEach((opt, i) => {
+                opt.classList.remove('selected');
+                if (i === idx) opt.classList.add('selected');
+            });
+            assessmentAnswers[currentQuestion] = idx;
+        }
+
+        function nextQuestion() {
+            const assessment = assessments[currentAssessment];
+            
+            if (assessmentAnswers[currentQuestion] === undefined) {
+                alert('请选择一个选项');
+                return;
+            }
+            
+            if (currentQuestion < assessment.questions.length - 1) {
+                currentQuestion++;
+                renderQuestion();
+            } else {
+                showResult();
+            }
+        }
+
+        function showResult() {
+            const total = assessmentAnswers.reduce((a, b) => a + b, 0);
+            const assessment = assessments[currentAssessment];
+            
+            let level = assessment.levels[0];
+            for (const l of assessment.levels) {
+                if (total <= l.max) {
+                    level = l;
+                    break;
+                }
+            }
+            
+            document.getElementById('questionContainer').classList.remove('active');
+            document.getElementById('resultContainer').style.display = 'block';
+            document.getElementById('resultScore').textContent = total;
+            document.getElementById('resultLevel').textContent = level.name;
+            document.getElementById('resultDesc').textContent = level.desc;
+        }
+
+        function resetAssessment() {
+            document.getElementById('assessmentTypes').style.display = 'grid';
+            document.getElementById('questionContainer').classList.remove('active');
+            document.getElementById('resultContainer').style.display = 'none';
+            currentAssessment = null;
+            currentQuestion = 0;
+            assessmentAnswers = [];
+        }
+
+        // ==================== 日记功能 ====================
+        function toggleTag(btn) {
+            btn.classList.toggle('active');
+        }
+
+        function saveJournal() {
+            const content = document.getElementById('journalInput').value.trim();
+            if (!content) {
+                alert('请输入日记内容');
+                return;
+            }
+            
+            const tags = [];
+            document.querySelectorAll('.journal-tag.active').forEach(tag => {
+                tags.push(tag.textContent);
+            });
+            
+            const journal = {
+                date: new Date().toLocaleString('zh-CN'),
+                content: content,
+                tags: tags
+            };
+            
+            // 保存到本地存储
+            let journals = JSON.parse(localStorage.getItem('emohealer_journals') || '[]');
+            journals.unshift(journal);
+            localStorage.setItem('emohealer_journals', JSON.stringify(journals));
+            
+            alert('日记保存成功！');
+            document.getElementById('journalInput').value = '';
+            document.querySelectorAll('.journal-tag.active').forEach(tag => tag.classList.remove('active'));
+            renderJournalList();
+        }
+
+        function renderJournalList() {
+            const journals = JSON.parse(localStorage.getItem('emohealer_journals') || '[]');
+            const list = document.getElementById('journalList');
+            
+            if (journals.length === 0) {
+                list.innerHTML = '<p style="color: var(--text-light); text-align: center; padding: 20px;">暂无日记记录</p>';
+                return;
+            }
+            
+            let html = '';
+            journals.forEach((journal, idx) => {
+                html += `
+                    <div class="journal-item" onclick="showJournalDetail(${idx})">
+                        <div class="journal-date">${journal.date}</div>
+                        <div class="journal-content">${journal.content.substring(0, 100)}${journal.content.length > 100 ? '...' : ''}</div>
+                    </div>
+                `;
+            });
+            list.innerHTML = html;
+        }
+
+        function showJournalDetail(idx) {
+            const journals = JSON.parse(localStorage.getItem('emohealer_journals') || '[]');
+            const journal = journals[idx];
+            
+            document.getElementById('modalBody').innerHTML = `
+                <div style="margin-bottom: 16px; color: var(--text-light);">${journal.date}</div>
+                <div style="margin-bottom: 16px;">
+                    ${journal.tags.map(t => `<span style="display: inline-block; padding: 4px 12px; background: var(--soft-blue); border-radius: 12px; font-size: 13px; margin-right: 8px;">${t}</span>`).join('')}
+                </div>
+                <div style="line-height: 1.8; white-space: pre-wrap;">${journal.content}</div>
+            `;
+            
+            document.getElementById('journalModal').classList.add('active');
+        }
+
+        function closeModal() {
+            document.getElementById('journalModal').classList.remove('active');
+        }
+
+        // ==================== 预约功能 ====================
+        function submitAppointment() {
+            const name = document.getElementById('appointmentName').value.trim();
+            const phone = document.getElementById('appointmentPhone').value.trim();
+            const type = document.getElementById('appointmentType').value;
+            const date = document.getElementById('appointmentDate').value;
+            const desc = document.getElementById('appointmentDesc').value.trim();
+            
+            if (!name || !phone || !type || !date) {
+                alert('请填写完整信息');
+                return;
+            }
+            
+            // 模拟提交
+            alert(`预约成功！\n\n姓名：${name}\n类型：${type}\n日期：${date}\n\n我们将尽快与您联系。`);
+            
+            // 清空表单
+            document.getElementById('appointmentName').value = '';
+            document.getElementById('appointmentPhone').value = '';
+            document.getElementById('appointmentType').value = '';
+            document.getElementById('appointmentDate').value = '';
+            document.getElementById('appointmentDesc').value = '';
+        }
+
+        // ==================== 初始化 ====================
+        document.addEventListener('DOMContentLoaded', function() {
+            // 页面加载完成
+        });
+    </script>
+</body>
+</html>

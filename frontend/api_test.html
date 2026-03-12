@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>EmoHealer API 测试页面</title>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { 
+            font-family: 'Noto Sans SC', sans-serif; 
+            background: linear-gradient(135deg, #FDF8F3 0%, #E8F4F8 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1200px; margin: 0 auto; }
+        h1 { color: #5A9BC7; margin-bottom: 20px; text-align: center; }
+        
+        .test-section {
+            background: white;
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 20px rgba(126, 184, 218, 0.15);
+        }
+        
+        .test-section h2 { 
+            color: #4A5568; 
+            margin-bottom: 16px; 
+            font-size: 18px;
+            border-bottom: 2px solid #E8F4F8;
+            padding-bottom: 10px;
+        }
+        
+        .btn {
+            padding: 12px 24px;
+            background: linear-gradient(135deg, #7EB8DA, #5A9BC7);
+            color: white;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            margin: 4px;
+            transition: transform 0.2s;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .btn:active { transform: translateY(0); }
+        
+        .result {
+            margin-top: 16px;
+            padding: 16px;
+            background: #F7FAFC;
+            border-radius: 8px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            word-break: break-all;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+        
+        .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 16px; }
+        
+        .card {
+            background: #F7FAFC;
+            padding: 16px;
+            border-radius: 12px;
+            text-align: center;
+        }
+        
+        .card-value { font-size: 32px; font-weight: bold; color: #5A9BC7; }
+        .card-label { font-size: 14px; color: #718096; margin-top: 8px; }
+        
+        #emotionChart { width: 100%; height: 350px; margin-top: 20px; }
+        
+        .loading { color: #718096; font-style: italic; }
+        .error { color: #E53E3E; }
+        .success { color: #38A169; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>EmoHealer API 开发测试页面</h1>
+        
+        <!-- 健康检查 -->
+        <div class="test-section">
+            <h2>1. 健康检查</h2>
+            <button class="btn" onclick="testHealthCheck()">测试 /api/health</button>
+            <div class="result" id="result-health">点击按钮测试...</div>
+        </div>
+        
+        <!-- 用户信息 -->
+        <div class="test-section">
+            <h2>2. 用户信息</h2>
+            <button class="btn" onclick="testGetUserInfo()">获取用户信息</button>
+            <button class="btn" onclick="testGetUserStats()">获取用户统计</button>
+            <div class="result" id="result-user">点击按钮测试...</div>
+        </div>
+        
+        <!-- 对话功能 -->
+        <div class="test-section">
+            <h2>3. AI对话功能</h2>
+            <input type="text" id="chatMessage" placeholder="输入消息..." style="width: 300px; padding: 10px; border: 1px solid #E2E8F0; border-radius: 8px;">
+            <select id="chatEmotion" style="padding: 10px; border: 1px solid #E2E8F0; border-radius: 8px;">
+                <option value="">自动检测</option>
+                <option value="happy">开心</option>
+                <option value="sad">难过</option>
+                <option value="anxious">焦虑</option>
+                <option value="angry">愤怒</option>
+                <option value="tired">疲惫</option>
+            </select>
+            <button class="btn" onclick="testSendMessage()">发送消息</button>
+            <button class="btn" onclick="testGetChatHistory()">获取历史</button>
+            <div class="result" id="result-chat">点击按钮测试...</div>
+        </div>
+        
+        <!-- 情绪趋势 -->
+        <div class="test-section">
+            <h2>4. 情绪趋势数据</h2>
+            <button class="btn" onclick="testEmotionTrend('week')">周</button>
+            <button class="btn" onclick="testEmotionTrend('month')">月</button>
+            <button class="btn" onclick="testEmotionTrend('year')">年</button>
+            <div id="emotionChart"></div>
+            <div class="result" id="result-emotion">点击按钮测试...</div>
+        </div>
+        
+        <!-- 疗愈方案 -->
+        <div class="test-section">
+            <h2>5. 疗愈方案</h2>
+            <button class="btn" onclick="testGetHealingPlan()">获取今日方案</button>
+            <button class="btn" onclick="testGetHealingPlans()">获取方案列表</button>
+            <div class="result" id="result-plan">点击按钮测试...</div>
+        </div>
+        
+        <!-- 心理测评 -->
+        <div class="test-section">
+            <h2>6. 心理测评</h2>
+            <button class="btn" onclick="testGetAssessments()">获取测评历史</button>
+            <button class="btn" onclick="testSubmitAssessment()">提交测评</button>
+            <div class="result" id="result-assessment">点击按钮测试...</div>
+        </div>
+        
+        <!-- 预约咨询 -->
+        <div class="test-section">
+            <h2>7. 预约咨询</h2>
+            <button class="btn" onclick="testGetAppointments()">获取预约列表</button>
+            <button class="btn" onclick="testSubmitAppointment()">提交预约</button>
+            <div class="result" id="result-appointment">点击按钮测试...</div>
+        </div>
+    </div>
+
+    <!-- 引入API服务 -->
+    <script src="api.js"></script>
+    
+    <script>
+        // 显示结果
+        function showResult(id, data, isError = false) {
+            const el = document.getElementById(id);
+            if (isError) {
+                el.innerHTML = `<span class="error">错误: ${data}</span>`;
+            } else {
+                el.innerHTML = `<span class="success">✓ 成功</span>\n${JSON.stringify(data, null, 2)}`;
+            }
+        }
+
+        function showLoading(id) {
+            document.getElementById(id).innerHTML = '<span class="loading">加载中...</span>';
+        }
+
+        // 1. 健康检查
+        async function testHealthCheck() {
+            showLoading('result-health');
+            const result = await healthCheck();
+            showResult('result-health', result);
+        }
+
+        // 2. 用户信息
+        async function testGetUserInfo() {
+            showLoading('result-user');
+            const result = await getUserInfo(1);
+            showResult('result-user', result);
+        }
+
+        async function testGetUserStats() {
+            showLoading('result-user');
+            const result = await getUserStats(1);
+            showResult('result-user', result);
+        }
+
+        // 3. 对话功能
+        async function testSendMessage() {
+            const message = document.getElementById('chatMessage').value || '我今天心情不好';
+            const emotion = document.getElementById('chatEmotion').value || null;
+            showLoading('result-chat');
+            
+            const result = await sendChatMessage(1, message, emotion);
+            showResult('result-chat', result);
+        }
+
+        async function testGetChatHistory() {
+            showLoading('result-chat');
+            const result = await getChatHistory(1);
+            showResult('result-chat', result);
+        }
+
+        // 4. 情绪趋势
+        let currentPeriod = 'month';
+        
+        async function testEmotionTrend(period) {
+            currentPeriod = period;
+            showLoading('result-emotion');
+            
+            const result = await getEmotionTrend(1, period);
+            showResult('result-emotion', result);
+            
+            // 渲染图表
+            renderChart(result.data || []);
+        }
+
+        function renderChart(data) {
+            const chartDom = document.getElementById('emotionChart');
+            const myChart = echarts.init(chartDom);
+            
+            const option = {
+                tooltip: { trigger: 'axis' },
+                legend: { data: ['整体情绪', '焦虑指数', '幸福指数'], bottom: 0 },
+                grid: { left: '3%', right: '4%', bottom: '15%', top: '10%', containLabel: true },
+                xAxis: {
+                    type: 'category',
+                    boundaryGap: false,
+                    data: data.map(d => d.date)
+                },
+                yAxis: { type: 'value', min: 0, max: 100 },
+                series: [
+                    {
+                        name: '整体情绪',
+                        type: 'line',
+                        smooth: true,
+                        data: data.map(d => d.overall),
+                        lineStyle: { color: '#7EB8DA', width: 3 },
+                        itemStyle: { color: '#7EB8DA' }
+                    },
+                    {
+                        name: '焦虑指数',
+                        type: 'line',
+                        smooth: true,
+                        data: data.map(d => d.anxiety),
+                        lineStyle: { color: '#E8A598' },
+                        itemStyle: { color: '#E8A598' }
+                    },
+                    {
+                        name: '幸福指数',
+                        type: 'line',
+                        smooth: true,
+                        data: data.map(d => d.happiness),
+                        lineStyle: { color: '#9DD6C3' },
+                        itemStyle: { color: '#9DD6C3' }
+                    }
+                ]
+            };
+            
+            myChart.setOption(option);
+        }
+
+        // 5. 疗愈方案
+        async function testGetHealingPlan() {
+            showLoading('result-plan');
+            const result = await getHealingPlan(1);
+            showResult('result-plan', result);
+        }
+
+        async function testGetHealingPlans() {
+            showLoading('result-plan');
+            const result = await getHealingPlans(1);
+            showResult('result-plan', result);
+        }
+
+        // 6. 心理测评
+        async function testGetAssessments() {
+            showLoading('result-assessment');
+            const result = await getAssessments(1);
+            showResult('result-assessment', result);
+        }
+
+        async function testSubmitAssessment() {
+            showLoading('result-assessment');
+            const result = await submitAssessment(1, 'PHQ-9', [0,1,1,2,0,1,0,0,0], 'mild', '建议多参加户外活动');
+            showResult('result-assessment', result);
+        }
+
+        // 7. 预约咨询
+        async function testGetAppointments() {
+            showLoading('result-appointment');
+            const result = await getAppointments(1);
+            showResult('result-appointment', result);
+        }
+
+        async function testSubmitAppointment() {
+            showLoading('result-appointment');
+            const result = await submitAppointment(1, '张三', '13800138000', 'video', '2026-03-15', '情绪困扰');
+            showResult('result-appointment', result);
+        }
+
+        // 初始化加载月数据
+        window.onload = function() {
+            testEmotionTrend('month');
+        };
+    </script>
+</body>
+</html>

@@ -1,0 +1,199 @@
+{% extends "base.html" %}
+
+{% block title %}AI对话疗愈{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">AI情绪疗愈对话</h1>
+    <p class="page-subtitle">在这里，您可以倾诉心事，AI将为您提供温暖的陪伴</p>
+</div>
+
+<!-- 危机预警提示 -->
+<div id="crisisAlert" class="alert alert-danger" style="display: none;">
+    <i class="fas fa-exclamation-triangle"></i>
+    <strong>温馨提示：</strong>如果您有自杀或自残的想法，请立即寻求专业帮助。
+    24小时心理援助热线：400-161-9995
+</div>
+
+<div class="grid grid-2">
+    <!-- 对话区域 -->
+    <div class="card">
+        <h3 class="card-title"><i class="fas fa-comments"></i> 与AI对话</h3>
+        
+        <!-- 情绪选择 -->
+        <div class="input-group">
+            <label class="input-label">当前情绪：</label>
+            <div class="emotion-selector" id="emotionSelector">
+                <button class="emotion-btn active" data-emotion="neutral">😊 一般</button>
+                <button class="emotion-btn" data-emotion="happy">😄 开心</button>
+                <button class="emotion-btn" data-emotion="sad">😢 难过</button>
+                <button class="emotion-btn" data-emotion="anxious">😰 焦虑</button>
+                <button class="emotion-btn" data-emotion="angry">😠 愤怒</button>
+                <button class="emotion-btn" data-emotion="tired">😴 疲惫</button>
+            </div>
+        </div>
+        
+        <!-- 对话容器 -->
+        <div class="chat-container">
+            <div class="chat-messages" id="chatMessages">
+                <div class="message ai">
+                    <div class="message-avatar"><i class="fas fa-robot"></i></div>
+                    <div class="message-content">
+                        您好！我是EmoHealer AI助手 💙<br><br>
+                        很高兴见到您！今天过得怎么样？<br>
+                        有什么想聊的，我可以陪您说说～
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-area">
+                <input type="text" class="chat-input" id="chatInput" placeholder="输入您想说的话...">
+                <button class="btn btn-primary" onclick="sendMessage()">
+                    <i class="fas fa-paper-plane"></i> 发送
+                </button>
+            </div>
+        </div>
+    </div>
+    
+    <!-- 历史记录 -->
+    <div class="card">
+        <h3 class="card-title"><i class="fas fa-history"></i> 对话历史</h3>
+        <div id="chatHistory">
+            <div class="loading"><div class="spinner"></div></div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+let currentEmotion = 'neutral';
+
+// 初始化
+document.addEventListener('DOMContentLoaded', function() {
+    // 情绪选择
+    document.querySelectorAll('.emotion-btn').forEach(btn => {
+        btn.addEventListener('click', function() {
+            document.querySelectorAll('.emotion-btn').forEach(b => b.classList.remove('active'));
+            this.classList.add('active');
+            currentEmotion = this.dataset.emotion;
+        });
+    });
+    
+    // 回车发送
+    document.getElementById('chatInput').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter') {
+            sendMessage();
+        }
+    });
+    
+    // 加载历史记录
+    loadChatHistory();
+});
+
+async function sendMessage() {
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
+    
+    if (!message) return;
+    
+    // 添加用户消息
+    addMessage(message, true, currentEmotion);
+    input.value = '';
+    
+    // 显示加载中
+    const loadingMsg = addMessage('正在思考中...', false, null, true);
+    
+    try {
+        // 调用API
+        const response = await fetch('/api/chat/send', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                user_id: CURRENT_USER_ID,
+                message: message,
+                emotion: currentEmotion
+            })
+        });
+        
+        const result = await response.json();
+        
+        // 移除加载消息
+        loadingMsg.remove();
+        
+        if (result.code === 200) {
+            // 添加AI回复
+            addMessage(result.data.reply, false, result.data.emotion_detected);
+            
+            // 检查危机预警
+            if (result.data.crisis_alert) {
+                document.getElementById('crisisAlert').style.display = 'block';
+            }
+        } else {
+            addMessage('抱歉，回复生成失败，请稍后重试。', false, null);
+        }
+    } catch (e) {
+        console.error(e);
+        loadingMsg.remove();
+        // Mock回复
+        addMessage('感谢您的分享！无论发生什么，记得您不是一个人。💙', false, null);
+    }
+}
+
+function addMessage(content, isUser, emotion = null, isLoading = false) {
+    const messages = document.getElementById('chatMessages');
+    const div = document.createElement('div');
+    div.className = `message ${isUser ? 'user' : 'ai'}`;
+    
+    let avatarIcon = isUser ? 'fa-user' : 'fa-robot';
+    let emotionEmoji = '';
+    if (emotion && !isUser) {
+        const emotionMap = {
+            'happy': '😄', 'sad': '😢', 'anxious': '😰',
+            'angry': '😠', 'tired': '😴', 'neutral': '😊',
+            '开心': '😄', '难过': '😢', '焦虑': '😰',
+            '愤怒': '😠', '疲惫': '😴'
+        };
+        emotionEmoji = emotionMap[emotion] || '';
+    }
+    
+    if (isLoading) {
+        div.innerHTML = `
+            <div class="message-avatar"><i class="fas fa-robot"></i></div>
+            <div class="message-content"><div class="spinner" style="width:20px;height:20px;"></div></div>
+        `;
+    } else {
+        div.innerHTML = `
+            <div class="message-avatar"><i class="fas ${avatarIcon}"></i></div>
+            <div class="message-content">${emotionEmoji} ${content}</div>
+        `;
+    }
+    
+    messages.appendChild(div);
+    messages.scrollTop = messages.scrollHeight;
+    return div;
+}
+
+async function loadChatHistory() {
+    const container = document.getElementById('chatHistory');
+    
+    try {
+        const response = await fetch(`/api/chat/history/${CURRENT_USER_ID}?limit=10`);
+        const result = await response.json();
+        
+        if (result.code === 200 && result.data.length > 0) {
+            container.innerHTML = result.data.slice(0, 5).map(item => `
+                <div class="diary-item">
+                    <div class="diary-date">${formatDate(item.created_at)}</div>
+                    <div class="diary-content">${item.message.substring(0, 50)}...</div>
+                </div>
+            `).join('');
+        } else {
+            container.innerHTML = '<p style="color: #999; text-align: center;">暂无对话记录</p>';
+        }
+    } catch (e) {
+        container.innerHTML = '<p style="color: #999; text-align: center;">暂无对话记录</p>';
+    }
+}
+</script>
+{% endblock %}

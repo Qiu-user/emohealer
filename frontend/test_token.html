@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Token测试 - EmoHealer</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+        .result { margin-top: 20px; padding: 10px; background: #f0f0f0; border-radius: 5px; }
+        input { padding: 8px; width: 300px; }
+    </style>
+</head>
+<body>
+    <h1>Token测试 - EmoHealer</h1>
+    <p>测试账号: <b>testuser01</b> / <b>123456</b></p>
+    
+    <h3>设置Token:</h3>
+    <input type="text" id="tokenInput" placeholder="输入token">
+    <button onclick="setToken()">设置Token</button>
+    <button onclick="clearToken()">清除Token</button>
+    <br><br>
+    
+    <h3>测试功能:</h3>
+    <button onclick="testVerify()">验证Token</button>
+    <button onclick="testChat()">测试对话</button>
+    <button onclick="testStats()">测试统计</button>
+    
+    <div class="result" id="result"></div>
+
+    <script>
+        const API_BASE = 'http://localhost:8092/api';
+
+        function log(msg) {
+            document.getElementById('result').innerHTML = msg;
+            console.log(msg);
+        }
+
+        function setToken() {
+            const token = document.getElementById('tokenInput').value;
+            if (token) {
+                localStorage.setItem('emohealer_token', token);
+                log('Token已设置: ' + token);
+            }
+        }
+
+        function clearToken() {
+            localStorage.removeItem('emohealer_token');
+            log('Token已清除');
+        }
+
+        async function testVerify() {
+            const token = localStorage.getItem('emohealer_token');
+            if (!token) {
+                log('请先设置token!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/auth/verify?token=${token}`);
+                const data = await response.json();
+                log('验证结果: ' + JSON.stringify(data, null, 2));
+            } catch (e) {
+                log('错误: ' + e.message);
+            }
+        }
+
+        async function testChat() {
+            const token = localStorage.getElementById('tokenInput').value || localStorage.getItem('emohealer_token');
+            if (!token) {
+                log('请先设置token!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/chat/send`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ user_id: 8, message: '你好', emotion: 'happy' })
+                });
+                const data = await response.json();
+                log('对话结果: ' + JSON.stringify(data, null, 2));
+            } catch (e) {
+                log('错误: ' + e.message);
+            }
+        }
+
+        async function testStats() {
+            const token = localStorage.getElementById('tokenInput').value || localStorage.getItem('emohealer_token');
+            if (!token) {
+                log('请先设置token!');
+                return;
+            }
+            
+            try {
+                const response = await fetch(`${API_BASE}/stats/8`, {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const data = await response.json();
+                log('统计结果: ' + JSON.stringify(data, null, 2));
+            } catch (e) {
+                log('错误: ' + e.message);
+            }
+        }
+
+        // 显示当前token
+        const currentToken = localStorage.getItem('emohealer_token');
+        if (currentToken) {
+            document.getElementById('tokenInput').value = currentToken;
+            log('当前token: ' + currentToken);
+        }
+    </script>
+</body>
+</html>

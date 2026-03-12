@@ -1,0 +1,180 @@
+{% extends "base.html" %}
+
+{% block title %}EmoHealer - 首页{% endblock %}
+
+{% block content %}
+<div class="page-header">
+    <h1 class="page-title">欢迎来到情绪疗愈平台</h1>
+    <p class="page-subtitle">用AI科技，守护您的心理健康</p>
+</div>
+
+<!-- 统计概览 -->
+<div class="card">
+    <h3 class="card-title"><i class="fas fa-chart-bar"></i> 今日概览</h3>
+    <div class="grid grid-4" id="statsGrid">
+        <div class="stat-card">
+            <div class="stat-value" id="chatCount">-</div>
+            <div class="stat-label">对话次数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="emotionCount">-</div>
+            <div class="stat-label">情绪记录</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="assessmentCount">-</div>
+            <div class="stat-label">测评次数</div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-value" id="usageDays">-</div>
+            <div class="stat-label">使用天数</div>
+        </div>
+    </div>
+</div>
+
+<!-- 核心功能 -->
+<div class="grid grid-4">
+    <div class="feature-card" onclick="location.href='/chat'">
+        <div class="feature-icon"><i class="fas fa-comments"></i></div>
+        <div class="feature-title">AI对话疗愈</div>
+        <div class="feature-desc">智能情绪识别，个性化陪伴</div>
+    </div>
+    <div class="feature-card" onclick="location.href='/emotion'">
+        <div class="feature-icon"><i class="fas fa-chart-line"></i></div>
+        <div class="feature-title">情绪报告</div>
+        <div class="feature-desc">可视化数据，了解情绪变化</div>
+    </div>
+    <div class="feature-card" onclick="location.href='/assessment'">
+        <div class="feature-icon"><i class="fas fa-clipboard-list"></i></div>
+        <div class="feature-title">心理测评</div>
+        <div class="feature-desc">专业量表，了解心理状态</div>
+    </div>
+    <div class="feature-card" onclick="location.href='/breathing'">
+        <div class="feature-icon"><i class="fas fa-wind"></i></div>
+        <div class="feature-title">呼吸练习</div>
+        <div class="feature-desc">放松身心，缓解焦虑</div>
+    </div>
+</div>
+
+<!-- 更多功能 -->
+<div class="grid grid-3" style="margin-top: 1.5rem;">
+    <div class="feature-card" onclick="location.href='/plans'">
+        <div class="feature-icon"><i class="fas fa-spa"></i></div>
+        <div class="feature-title">疗愈方案</div>
+        <div class="feature-desc">个性化每日计划</div>
+    </div>
+    <div class="feature-card" onclick="location.href='/diary'">
+        <div class="feature-icon"><i class="fas fa-book"></i></div>
+        <div class="feature-title">情绪日记</div>
+        <div class="feature-desc">记录每一天的心情</div>
+    </div>
+    <div class="feature-card" onclick="location.href='/appointment'">
+        <div class="feature-icon"><i class="fas fa-calendar-alt"></i></div>
+        <div class="feature-title">预约咨询</div>
+        <div class="feature-desc">专业心理咨询</div>
+    </div>
+</div>
+
+<!-- 情绪分布 -->
+<div class="card" style="margin-top: 1.5rem;">
+    <h3 class="card-title"><i class="fas fa-chart-pie"></i> 情绪分布（近7天）</h3>
+    <div class="grid grid-2">
+        <div id="emotionPieChart" class="chart-container"></div>
+        <div id="emotionTrendChart" class="chart-container"></div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', async function() {
+    // 加载统计数据
+    loadStats();
+    // 加载情绪图表
+    loadEmotionCharts();
+});
+
+async function loadStats() {
+    try {
+        const response = await fetch(`/api/stats/${CURRENT_USER_ID}`);
+        const result = await response.json();
+        
+        if (result.code === 200) {
+            const data = result.data;
+            document.getElementById('chatCount').textContent = data.chat_count || 0;
+            document.getElementById('emotionCount').textContent = data.emotion_count || 0;
+            document.getElementById('assessmentCount').textContent = data.assessment_count || 0;
+            document.getElementById('usageDays').textContent = data.usage_days || 1;
+        }
+    } catch (e) {
+        console.log('使用Mock数据');
+        // 使用Mock数据
+        document.getElementById('chatCount').textContent = '28';
+        document.getElementById('emotionCount').textContent = '45';
+        document.getElementById('assessmentCount').textContent = '3';
+        document.getElementById('usageDays').textContent = '15';
+    }
+}
+
+async function loadEmotionCharts() {
+    // 饼图
+    const pieChart = echarts.init(document.getElementById('emotionPieChart'));
+    pieChart.setOption({
+        tooltip: { trigger: 'item' },
+        legend: { top: '5%', left: 'center' },
+        series: [{
+            name: '情绪分布',
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+                borderRadius: 10,
+                borderColor: '#fff',
+                borderWidth: 2
+            },
+            data: [
+                { value: 12, name: '开心', itemStyle: { color: '#4CAF50' } },
+                { value: 8, name: '难过', itemStyle: { color: '#2196F3' } },
+                { value: 10, name: '焦虑', itemStyle: { color: '#FF9800' } },
+                { value: 5, name: '愤怒', itemStyle: { color: '#f44336' } },
+                { value: 10, name: '疲惫', itemStyle: { color: '#9E9E9E' } }
+            ]
+        }]
+    });
+    
+    // 趋势图
+    const trendChart = echarts.init(document.getElementById('emotionTrendChart'));
+    const dates = [];
+    const values = [];
+    for (let i = 6; i >= 0; i--) {
+        const date = new Date();
+        date.setDate(date.getDate() - i);
+        dates.push(date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }));
+        values.push(Math.floor(Math.random() * 30) + 50);
+    }
+    
+    trendChart.setOption({
+        tooltip: { trigger: 'axis' },
+        xAxis: { type: 'category', data: dates },
+        yAxis: { type: 'value', min: 0, max: 100 },
+        series: [{
+            name: '情绪指数',
+            type: 'line',
+            smooth: true,
+            data: values,
+            areaStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                    { offset: 0, color: 'rgba(108, 99, 255, 0.5)' },
+                    { offset: 1, color: 'rgba(108, 99, 255, 0.1)' }
+                ])
+            },
+            itemStyle: { color: '#6C63FF' }
+        }]
+    });
+    
+    window.addEventListener('resize', () => {
+        pieChart.resize();
+        trendChart.resize();
+    });
+}
+</script>
+{% endblock %}

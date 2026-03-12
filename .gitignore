@@ -1,0 +1,56 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+*.egg-info/
+dist/
+build/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Node
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# 数据库
+*.db
+*.sqlite
+*.sqlite3
+
+# 日志
+*.log
+logs/
+
+# 环境变量
+.env
+.env.local
+
+# 临时文件
+*.tmp
+temp/
+cache/
+
+# 备份
+*.bak
+*.backup
+
+# 编译文件
+*.class
+*.o
+*.so
+target/
+
+# Excel
+*.xlsx
+*.xls
