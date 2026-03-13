@@ -5,6 +5,7 @@ from fastapi.responses import FileResponse
 from database import engine, Base
 from config import settings
 from src.routes import api
+from src.routes import websocket
 import os
 
 # 创建数据库表
@@ -33,6 +34,9 @@ app.add_middleware(
 
 # 注册路由 - 只注册api.router，auth路由已在api.py中定义
 app.include_router(api.router, prefix="/api", tags=["API"])
+
+# 注册WebSocket路由
+app.include_router(websocket.router, tags=["WebSocket"])
 
 @app.get("/")
 @app.get("/api")

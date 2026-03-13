@@ -1966,6 +1966,169 @@
         let currentQuestion = 0;
         let assessmentAnswers = [];
 
+        // ==================== WebSocket ====================
+        let ws = null;
+        let wsReconnectTimer = null;
+        let wsConnected = false;
+
+        // WebSocket配置
+        const WS_URL = 'ws://localhost:8092/ws/chat';
+
+        // 初始化WebSocket连接
+        function initWebSocket() {
+            if (!authToken) return;
+
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                return;
+            }
+
+            try {
+                ws = new WebSocket(`${WS_URL}?token=${authToken}`);
+
+                ws.onopen = function() {
+                    console.log('WebSocket连接成功');
+                    wsConnected = true;
+                    updateConnectionStatus(true);
+
+                    // 清除重连定时器
+                    if (wsReconnectTimer) {
+                        clearTimeout(wsReconnectTimer);
+                        wsReconnectTimer = null;
+                    }
+                };
+
+                ws.onmessage = function(event) {
+                    try {
+                        const data = JSON.parse(event.data);
+                        handleWebSocketMessage(data);
+                    } catch (e) {
+                        console.error('解析WebSocket消息失败:', e);
+                    }
+                };
+
+                ws.onclose = function(event) {
+                    console.log('WebSocket连接关闭', event.code, event.reason);
+                    wsConnected = false;
+                    updateConnectionStatus(false);
+
+                    // 自动重连
+                    if (authToken && !event.wasClean) {
+                        scheduleReconnect();
+                    }
+                };
+
+                ws.onerror = function(error) {
+                    console.error('WebSocket错误:', error);
+                    wsConnected = false;
+                    updateConnectionStatus(false);
+                };
+
+            } catch (e) {
+                console.error('创建WebSocket失败:', e);
+            }
+        }
+
+        // 处理WebSocket消息
+        function handleWebSocketMessage(data) {
+            switch (data.type) {
+                case 'system':
+                    // 系统消息
+                    console.log('系统消息:', data.content);
+                    break;
+
+                case 'message':
+                    // AI回复
+                    removeTypingIndicator();
+
+                    if (data.is_crisis) {
+                        addMessage('⚠️ 检测到您可能处于危机状态，请立即寻求专业帮助。\n\n紧急求助热线：400-161-9995', 'ai', '危机预警');
+                    }
+
+                    if (data.content) {
+                        addMessage(data.content, 'ai', data.emotion);
+                    }
+                    break;
+
+                case 'typing':
+                    // AI正在输入
+                    showTypingIndicator();
+                    break;
+
+                case 'heartbeat':
+                    // 心跳响应
+                    break;
+
+                case 'crisis_alert':
+                    // 危机预警
+                    addMessage('⚠️ ' + data.content, 'ai', '危机预警');
+                    break;
+
+                case 'error':
+                    // 错误消息
+                    removeTypingIndicator();
+                    addMessage('⚠️ ' + data.content, 'ai', '系统提示');
+                    break;
+
+                case 'online_count':
+                    // 在线人数更新
+                    console.log('当前在线人数:', data.count);
+                    break;
+
+                default:
+                    console.log('未知消息类型:', data);
+            }
+        }
+
+        // 调度重连
+        function scheduleReconnect() {
+            if (wsReconnectTimer) return;
+
+            console.log('5秒后尝试重新连接...');
+            wsReconnectTimer = setTimeout(function() {
+                wsReconnectTimer = null;
+                if (authToken) {
+                    initWebSocket();
+                }
+            }, 5000);
+        }
+
+        // 断开WebSocket
+        function disconnectWebSocket() {
+            if (wsReconnectTimer) {
+                clearTimeout(wsReconnectTimer);
+                wsReconnectTimer = null;
+            }
+
+            if (ws) {
+                ws.close();
+                ws = null;
+            }
+            wsConnected = false;
+        }
+
+        // 通过WebSocket发送消息
+        function sendMessageViaWebSocket(message, emotion) {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'message',
+                    content: message,
+                    emotion: emotion || 'neutral'
+                }));
+                return true;
+            }
+            return false;
+        }
+
+        // 更新连接状态显示
+        function updateConnectionStatus(connected) {
+            const statusIndicator = document.getElementById('wsStatus');
+            if (statusIndicator) {
+                statusIndicator.innerHTML = connected ?
+                    '<span style="color: green;">● WebSocket已连接</span>' :
+                    '<span style="color: red;">● WebSocket未连接</span>';
+            }
+        }
+
         // AI回复
         const aiResponses = {
             '😊 开心': [
@@ -2022,6 +2185,9 @@
                     authToken = result.token;
                     localStorage.setItem('emohealer_token', authToken);
 
+                    // 初始化WebSocket连接
+                    initWebSocket();
+
                     // 更新界面
                     updateAuthButton();
                     showPage('home');
@@ -2044,6 +2210,8 @@
                         currentUser = null;
                         authToken = null;
                         localStorage.removeItem('emohealer_token');
+                        // 断开WebSocket连接
+                        disconnectWebSocket();
                         updateAuthButton();
                         showPage('home');
                     };
@@ -2189,6 +2357,17 @@
             input.value = '';
             input.style.height = 'auto';
 
+            // 优先使用WebSocket
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                showTypingIndicator();
+                sendMessageViaWebSocket(message, currentEmotion);
+                // WebSocket消息通过onmessage处理回复
+                sendBtn.disabled = false;
+                document.getElementById('chatInput').focus();
+                return;
+            }
+
+            // 回退到HTTP API
             showTypingIndicator();
 
             try {
@@ -2224,11 +2403,6 @@
                 
                 // 显示错误提示
                 addMessage('⚠️ 无法连接到AI服务，请确保后端服务已启动。\n\n错误信息: ' + error.message, 'ai', '系统提示');
-                
-                // 不使用fallback，保持状态调试
-                // const responses = aiResponses[currentEmotion] || aiResponses['default'];
-                // const response = responses[Math.floor(Math.random() * responses.length)];
-                // addMessage(response, 'ai', '温暖回应');
             }
             
             sendBtn.disabled = false;
