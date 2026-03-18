@@ -57,6 +57,14 @@ def emohealer_page():
         return FileResponse(html_path)
     return {"error": "File not found"}
 
+# 运维管理后台
+@app.get("/admin")
+def admin_page():
+    html_path = os.path.join(TEMPLATE_DIR, "admin.html")
+    if os.path.exists(html_path):
+        return FileResponse(html_path)
+    return {"error": "Admin page not found"}
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(

@@ -170,6 +170,46 @@ CREATE TABLE system_config (
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统配置表';
 
+-- =====================================================
+-- 9. Token消耗记录表
+-- =====================================================
+DROP TABLE IF EXISTS token_usage;
+CREATE TABLE token_usage (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '记录ID',
+    user_id BIGINT NOT NULL COMMENT '用户ID',
+    model_provider VARCHAR(20) NOT NULL COMMENT '模型提供商: baidu-openai-zhipu',
+    model_name VARCHAR(50) NOT NULL COMMENT '模型名称',
+    prompt_tokens INT DEFAULT 0 COMMENT '提示Token数',
+    completion_tokens INT DEFAULT 0 COMMENT '回复Token数',
+    total_tokens INT DEFAULT 0 COMMENT '总Token数',
+    cost DECIMAL(10,6) DEFAULT 0 COMMENT '消耗费用(元)',
+    conversation_type VARCHAR(20) DEFAULT 'chat' COMMENT '对话类型: chat-聊天 emotion-情绪评估 plan-方案生成',
+    response_time INT DEFAULT 0 COMMENT '响应时间(毫秒)',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_model_provider (model_provider),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='Token消耗记录表';
+
+-- =====================================================
+-- 10. 系统操作日志表
+-- =====================================================
+DROP TABLE IF EXISTS operation_log;
+CREATE TABLE operation_log (
+    id BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '日志ID',
+    user_id BIGINT COMMENT '操作用户ID',
+    username VARCHAR(50) COMMENT '操作用户名',
+    operation_type VARCHAR(30) NOT NULL COMMENT '操作类型: login-logout CRUD',
+    resource_type VARCHAR(30) COMMENT '资源类型: user-chat-plan-assessment',
+    resource_id BIGINT COMMENT '资源ID',
+    operation_detail TEXT COMMENT '操作详情',
+    ip_address VARCHAR(50) COMMENT 'IP地址',
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
+    INDEX idx_user_id (user_id),
+    INDEX idx_operation_type (operation_type),
+    INDEX idx_created_at (created_at)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='系统操作日志表';
+
 -- 初始化系统配置
 INSERT INTO system_config (config_key, config_value, description) VALUES
 ('crisis_keywords', '["自杀", "自伤", "放弃", "不想活", "结束一切", "绝望"]', '危机关键词列表'),
@@ -177,6 +217,9 @@ INSERT INTO system_config (config_key, config_value, description) VALUES
 ('emotion_threshold_sad', '75', '抑郁情绪阈值'),
 ('max_daily_conversations', '100', '每日最大对话次数'),
 ('ai_model', 'wenxin', 'AI模型: wenxin-文心一言 chatglm-ChatGLM'),
-('crisis_alert_email', 'support@emohealer.com', '危机预警通知邮箱');
+('crisis_alert_email', 'support@emohealer.com', '危机预警通知邮箱'),
+('token_price_baidu', '0.0003', '百度文心一言Token单价(元)'),
+('token_price_openai', '0.002', 'OpenAI GPT Token单价(元)'),
+('token_price_zhipu', '0.0005', '智谱AI Token单价(元)');
 
 SELECT '数据库初始化完成！' AS result;

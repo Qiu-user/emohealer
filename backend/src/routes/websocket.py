@@ -203,12 +203,13 @@ async def websocket_chat(
                         "content": "AI正在思考..."
                     })
                     
-                    # 调用AI服务生成回复
+                    # 调用AI服务生成回复（传递db session以加载历史记录）
                     try:
                         ai_result = await enhanced_ai_agent.chat(
-                            user.id, 
-                            user_message, 
-                            emotion
+                            user.id,
+                            user_message,
+                            emotion,
+                            db
                         )
                         
                         # 保存对话记录到数据库

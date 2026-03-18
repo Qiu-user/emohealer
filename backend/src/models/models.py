@@ -104,9 +104,37 @@ class ConsultationAppointment(Base):
 
 class UserToken(Base):
     __tablename__ = "user_token"
-    
+
     id = Column(Integer, primary_key=True, index=True, autoincrement=True)
     user_id = Column(Integer, nullable=False)
     token = Column(String(255), unique=True, nullable=False)
     expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, server_default=func.now())
+
+class TokenUsage(Base):
+    __tablename__ = "token_usage"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False)
+    model_provider = Column(String(20), nullable=False)
+    model_name = Column(String(50), nullable=False)
+    prompt_tokens = Column(Integer, default=0)
+    completion_tokens = Column(Integer, default=0)
+    total_tokens = Column(Integer, default=0)
+    cost = Column(DECIMAL(10, 6), default=0)
+    conversation_type = Column(String(20), default="chat")
+    response_time = Column(Integer, default=0)
+    created_at = Column(DateTime, server_default=func.now())
+
+class OperationLog(Base):
+    __tablename__ = "operation_log"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer)
+    username = Column(String(50))
+    operation_type = Column(String(30), nullable=False)
+    resource_type = Column(String(30))
+    resource_id = Column(Integer)
+    operation_detail = Column(Text)
+    ip_address = Column(String(50))
     created_at = Column(DateTime, server_default=func.now())

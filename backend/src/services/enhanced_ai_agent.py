@@ -33,6 +33,14 @@ except ImportError:
     HAS_KNOWLEDGE_BASE = False
     knowledge_base = None
 
+# 导入RAG增强模块
+try:
+    from src.services.emotion_rag import emotion_rag
+    HAS_EMOTION_RAG = True
+except ImportError:
+    HAS_EMOTION_RAG = False
+    emotion_rag = None
+
 
 class AgentRole(Enum):
     """智能体角色类型"""
@@ -1171,28 +1179,67 @@ class EnhancedLLMWrapper:
 
 class EnhancedEmoHealerAgent:
     """增强版EmoHealer AI智能体主类"""
-    
-    def __init__(self, config: Dict = None):
+
+    def __init__(self, config: Dict = None, db_session=None):
         self.config = config or {}
-        
+        self.db_session = db_session  # 数据库会话
+
         # 初始化各模块
         self.persona_manager = PersonaManager()
         self.emotion_analyzer = EmotionAnalyzer()
         self.crisis_detector = CrisisDetector()
         self.strategy = ConversationStrategy()
-        
+
         # LLM配置
         llm_config = self.config.get('llm', {})
         self.llm = EnhancedLLMWrapper(llm_config)
         self.use_llm = self.config.get('use_llm', False)
-        
+
         # 对话上下文缓存
         self.contexts: Dict[int, ConversationContext] = {}
+
+    def load_history_from_db(self, user_id: int, limit: int = 10):
+        """从数据库加载用户历史对话记录"""
+        if not self.db_session:
+            return []
+
+        try:
+            from src.models.models import ChatRecord
+            from sqlalchemy import desc
+
+            records = self.db_session.query(ChatRecord).filter(
+                ChatRecord.user_id == user_id
+            ).order_by(desc(ChatRecord.created_at)).limit(limit).all()
+
+            # 反转顺序（从旧到新）
+            history = []
+            for record in reversed(records):
+                history.append({
+                    'role': 'user',
+                    'content': record.user_message,
+                    'timestamp': record.created_at.isoformat() if record.created_at else ''
+                })
+                if record.ai_reply:
+                    history.append({
+                        'role': 'assistant',
+                        'content': record.ai_reply,
+                        'timestamp': record.created_at.isoformat() if record.created_at else ''
+                    })
+
+            return history
+        except Exception as e:
+            print(f"加载历史记录失败: {e}")
+            return []
     
     def get_context(self, user_id: int) -> ConversationContext:
-        """获取或创建对话上下文"""
+        """获取或创建对话上下文（从数据库加载历史记录）"""
         if user_id not in self.contexts:
-            self.contexts[user_id] = ConversationContext(user_id=user_id)
+            # 创建新的上下文并加载历史记录
+            context = ConversationContext(user_id=user_id)
+            # 加载最近10条对话历史
+            history = self.load_history_from_db(user_id, limit=10)
+            context.messages = history
+            self.contexts[user_id] = context
         return self.contexts[user_id]
     
     def clear_context(self, user_id: int):
@@ -1200,38 +1247,74 @@ class EnhancedEmoHealerAgent:
         if user_id in self.contexts:
             del self.contexts[user_id]
     
-    async def chat(self, user_id: int, message: str, emotion: str = None) -> Dict:
+    async def chat(self, user_id: int, message: str, emotion: str = None, db_session=None) -> Dict:
         """
         处理用户对话
         返回包含AI回复和相关信息的字典
         """
+        # 设置数据库会话用于加载历史记录
+        if db_session:
+            self.db_session = db_session
+
+        # 获取上下文（会自动从数据库加载历史记录）
         context = self.get_context(user_id)
-        
+
         # 记录用户消息
         context.messages.append({
             'role': 'user',
             'content': message,
             'timestamp': datetime.now().isoformat()
         })
-        
-        # 分析情绪
+
+        # ==================== RAG增强情绪分析 ====================
         if emotion is None:
-            emotion_analysis = self.emotion_analyzer.analyze(message, context)
-            emotion = emotion_analysis['primary_emotion']
-            confidence = emotion_analysis['emotion_intensity'] / 10
-            triggers = emotion_analysis.get('emotion_triggers', [])
+            # 优先使用RAG模块进行更准确的分析
+            if HAS_EMOTION_RAG and emotion_rag:
+                rag_result = emotion_rag.analyze_emotion(message, {
+                    'emotion_history': context.emotion_history,
+                    'conversation_turn': context.conversation_turn
+                })
+                emotion = rag_result['primary_emotion']
+                confidence = rag_result['confidence']
+                triggers = rag_result.get('triggers', [])
+
+                # 使用RAG的安全检查
+                safety_check = rag_result.get('requires_immediate_support', False)
+                if safety_check or rag_result.get('intensity', 0) >= 8:
+                    # 重新进行安全检查
+                    safety_result = emotion_rag._check_safety(message.lower()) if hasattr(emotion_rag, '_check_safety') else {'level': 0}
+                    if safety_result.get('requires_intervention', False) or safety_result.get('level', 0) >= 3:
+                        crisis_level = 'high'
+                        crisis_message, _ = emotion_rag.get_safety_response(safety_result.get('level', 3))
+                        needs_intervention = True
+                        return {
+                            'reply': crisis_message,
+                            'emotion': emotion,
+                            'confidence': confidence,
+                            'is_crisis': True,
+                            'crisis_level': crisis_level,
+                            'triggers': triggers,
+                            'agent_role': 'listener',
+                            'timestamp': datetime.now().isoformat()
+                        }
+            else:
+                # 回退到原有分析器
+                emotion_analysis = self.emotion_analyzer.analyze(message, context)
+                emotion = emotion_analysis['primary_emotion']
+                confidence = emotion_analysis['emotion_intensity'] / 10
+                triggers = emotion_analysis.get('emotion_triggers', [])
         else:
             confidence = 0.85
             triggers = []
-        
+
         # 更新上下文
         context.current_emotion = emotion
         context.emotion_history.append({
             'emotion': emotion,
             'timestamp': datetime.now().isoformat()
         })
-        
-        # 检测危机
+
+        # 检测危机（原有检测器作为备用）
         crisis_level, needs_intervention, crisis_message = self.crisis_detector.detect(message)
         
         if crisis_level != 'none':
@@ -1292,6 +1375,21 @@ class EnhancedEmoHealerAgent:
         # 添加知识库内容
         if knowledge_tips:
             response_data['knowledge_tips'] = knowledge_tips
+
+        # 估算Token消耗（用于报表记录）
+        prompt_text = message + (result.get('response', '') if isinstance(result, dict) else '')
+        estimated_prompt_tokens = len(prompt_text) // 4  # 粗略估算
+        estimated_completion_tokens = len(result.get('response', '') if isinstance(result, dict) else '') // 4
+
+        response_data['token_usage'] = {
+            'provider': self.llm.provider if hasattr(self, 'llm') else 'mock',
+            'model': self.llm.model if hasattr(self, 'llm') else 'mock',
+            'prompt_tokens': estimated_prompt_tokens,
+            'completion_tokens': estimated_completion_tokens,
+            'total_tokens': estimated_prompt_tokens + estimated_completion_tokens,
+            'cost': (estimated_prompt_tokens + estimated_completion_tokens) * 0.0001,  # 粗略估算成本
+            'response_time': 0
+        }
 
         return response_data
     
