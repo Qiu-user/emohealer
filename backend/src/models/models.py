@@ -138,3 +138,19 @@ class OperationLog(Base):
     operation_detail = Column(Text)
     ip_address = Column(String(50))
     created_at = Column(DateTime, server_default=func.now())
+
+class EmotionDiary(Base):
+    """情绪日记表"""
+    __tablename__ = "emotion_diary"
+
+    id = Column(Integer, primary_key=True, index=True, autoincrement=True)
+    user_id = Column(Integer, nullable=False, index=True)
+    title = Column(String(200))
+    content = Column(Text, nullable=False)
+    mood_tags = Column(JSON)  # 心情标签，如["开心", "感恩"]
+    emotion_type = Column(String(20))  # 主要情绪类型
+    weather = Column(String(20))  # 天气
+    location = Column(String(100))  # 地点
+    is_archived = Column(Boolean, default=False)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())

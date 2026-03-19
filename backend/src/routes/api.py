@@ -7,7 +7,7 @@ from datetime import datetime, timedelta, date
 import hashlib
 import secrets
 from database import get_db
-from src.models.models import User, ChatRecord, EmotionLog, HealingPlan, CrisisAlert, PsychologicalAssessment, ConsultationAppointment, UserToken
+from src.models.models import User, ChatRecord, EmotionLog, HealingPlan, CrisisAlert, PsychologicalAssessment, ConsultationAppointment, UserToken, EmotionDiary
 from src.services.ai_service import ai_service
 from src.services.ai_agent import ai_agent
 from src.services.enhanced_ai_agent import enhanced_ai_agent
@@ -739,6 +739,65 @@ def get_user_stats(user_id: int, db: Session = Depends(get_db)):
         }
     }
 
+@router.get("/profile/{user_id}")
+def get_user_profile(user_id: int, db: Session = Depends(get_db)):
+    """获取用户中心完整信息"""
+    # 获取用户基本信息
+    user = db.query(User).filter(User.id == user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    # 对话次数
+    chat_count = db.query(ChatRecord).filter(
+        ChatRecord.user_id == user_id
+    ).count()
+
+    # 情绪记录数
+    emotion_count = db.query(EmotionLog).filter(
+        EmotionLog.user_id == user_id
+    ).count()
+
+    # 测评次数
+    assessment_count = db.query(PsychologicalAssessment).filter(
+        PsychologicalAssessment.user_id == user_id
+    ).count()
+
+    # 日记篇数（情绪日记）
+    journal_count = db.query(EmotionLog).filter(
+        EmotionLog.user_id == user_id,
+        EmotionLog.emotion_type == 'journal'
+    ).count()
+
+    # 使用天数
+    first_record = db.query(EmotionLog).filter(
+        EmotionLog.user_id == user_id
+    ).order_by(EmotionLog.created_at.asc()).first()
+
+    if first_record and first_record.created_at:
+        days = (datetime.now() - first_record.created_at).days + 1
+    else:
+        days = 1
+
+    return {
+        "code": 200,
+        "data": {
+            "id": user.id,
+            "username": user.username,
+            "nickname": user.nickname or user.username,
+            "avatar_url": user.avatar_url,
+            "email": user.email,
+            "gender": user.gender,
+            "bio": user.bio,
+            "created_at": user.created_at.isoformat() if user.created_at else None,
+            "last_login": user.last_login.isoformat() if user.last_login else None,
+            "chat_count": chat_count,
+            "emotion_count": emotion_count,
+            "assessment_count": assessment_count,
+            "journal_count": journal_count,
+            "usage_days": days
+        }
+    }
+
 # ==================== 疗愈方案接口 ====================
 
 @router.get("/plans/{user_id}")
@@ -747,7 +806,7 @@ def get_healing_plans(user_id: int, db: Session = Depends(get_db)):
     plans = db.query(HealingPlan).filter(
         HealingPlan.user_id == user_id
     ).order_by(HealingPlan.plan_date.desc()).limit(30).all()
-    
+
     return {
         "code": 200,
         "data": [
@@ -762,6 +821,171 @@ def get_healing_plans(user_id: int, db: Session = Depends(get_db)):
             for p in plans
         ]
     }
+
+# ==================== 情绪日记接口 ====================
+
+class DiaryCreateRequest(BaseModel):
+    user_id: int
+    title: Optional[str] = None
+    content: str
+    mood_tags: Optional[List[str]] = []
+    emotion_type: Optional[str] = None
+    weather: Optional[str] = None
+    location: Optional[str] = None
+
+
+class DiaryUpdateRequest(BaseModel):
+    title: Optional[str] = None
+    content: Optional[str] = None
+    mood_tags: Optional[List[str]] = None
+    emotion_type: Optional[str] = None
+    weather: Optional[str] = None
+    location: Optional[str] = None
+    is_archived: Optional[bool] = None
+
+
+@router.post("/diary")
+def create_diary(request: DiaryCreateRequest, db: Session = Depends(get_db)):
+    """创建情绪日记"""
+    # 验证用户存在
+    user = db.query(User).filter(User.id == request.user_id).first()
+    if not user:
+        raise HTTPException(status_code=404, detail="用户不存在")
+
+    diary = EmotionDiary(
+        user_id=request.user_id,
+        title=request.title,
+        content=request.content,
+        mood_tags=request.mood_tags,
+        emotion_type=request.emotion_type,
+        weather=request.weather,
+        location=request.location
+    )
+    db.add(diary)
+    db.commit()
+    db.refresh(diary)
+
+    return {
+        "code": 200,
+        "message": "日记保存成功",
+        "data": {
+            "id": diary.id,
+            "created_at": diary.created_at.isoformat() if diary.created_at else None
+        }
+    }
+
+
+@router.get("/diary/{user_id}")
+def get_diaries(user_id: int, page: int = 1, page_size: int = 20, db: Session = Depends(get_db)):
+    """获取用户的所有情绪日记（按时间倒序）"""
+    offset = (page - 1) * page_size
+
+    diaries = db.query(EmotionDiary).filter(
+        EmotionDiary.user_id == user_id,
+        EmotionDiary.is_archived == False
+    ).order_by(EmotionDiary.created_at.desc()).offset(offset).limit(page_size).all()
+
+    total = db.query(EmotionDiary).filter(
+        EmotionDiary.user_id == user_id,
+        EmotionDiary.is_archived == False
+    ).count()
+
+    return {
+        "code": 200,
+        "data": {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "items": [
+                {
+                    "id": d.id,
+                    "title": d.title,
+                    "content": d.content,
+                    "mood_tags": d.mood_tags or [],
+                    "emotion_type": d.emotion_type,
+                    "weather": d.weather,
+                    "location": d.location,
+                    "created_at": d.created_at.isoformat() if d.created_at else None,
+                    "updated_at": d.updated_at.isoformat() if d.updated_at else None
+                }
+                for d in diaries
+            ]
+        }
+    }
+
+
+@router.get("/diary/detail/{diary_id}")
+def get_diary_detail(diary_id: int, db: Session = Depends(get_db)):
+    """获取日记详情"""
+    diary = db.query(EmotionDiary).filter(EmotionDiary.id == diary_id).first()
+    if not diary:
+        raise HTTPException(status_code=404, detail="日记不存在")
+
+    return {
+        "code": 200,
+        "data": {
+            "id": diary.id,
+            "user_id": diary.user_id,
+            "title": diary.title,
+            "content": diary.content,
+            "mood_tags": diary.mood_tags or [],
+            "emotion_type": diary.emotion_type,
+            "weather": diary.weather,
+            "location": diary.location,
+            "created_at": diary.created_at.isoformat() if diary.created_at else None,
+            "updated_at": diary.updated_at.isoformat() if diary.updated_at else None
+        }
+    }
+
+
+@router.put("/diary/{diary_id}")
+def update_diary(diary_id: int, request: DiaryUpdateRequest, db: Session = Depends(get_db)):
+    """更新情绪日记"""
+    diary = db.query(EmotionDiary).filter(EmotionDiary.id == diary_id).first()
+    if not diary:
+        raise HTTPException(status_code=404, detail="日记不存在")
+
+    if request.title is not None:
+        diary.title = request.title
+    if request.content is not None:
+        diary.content = request.content
+    if request.mood_tags is not None:
+        diary.mood_tags = request.mood_tags
+    if request.emotion_type is not None:
+        diary.emotion_type = request.emotion_type
+    if request.weather is not None:
+        diary.weather = request.weather
+    if request.location is not None:
+        diary.location = request.location
+    if request.is_archived is not None:
+        diary.is_archived = request.is_archived
+
+    diary.updated_at = datetime.now()
+    db.commit()
+    db.refresh(diary)
+
+    return {
+        "code": 200,
+        "message": "日记更新成功"
+    }
+
+
+@router.delete("/diary/{diary_id}")
+def delete_diary(diary_id: int, db: Session = Depends(get_db)):
+    """删除情绪日记（软删除-归档）"""
+    diary = db.query(EmotionDiary).filter(EmotionDiary.id == diary_id).first()
+    if not diary:
+        raise HTTPException(status_code=404, detail="日记不存在")
+
+    diary.is_archived = True
+    diary.updated_at = datetime.now()
+    db.commit()
+
+    return {
+        "code": 200,
+        "message": "日记已删除"
+    }
+
 
 # ==================== AI配置接口 ====================
 

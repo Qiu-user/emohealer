@@ -846,10 +846,51 @@
         }
 
         .journal-item {
-            padding: 20px;
+            padding: 16px;
             background: var(--soft-gray);
             border-radius: 16px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            transition: all 0.2s;
+        }
+
+        .journal-item:hover {
+            background: #e8f4f8;
+        }
+
+        .journal-item-header {
+            flex: 1;
+            cursor: pointer;
+        }
+
+        .journal-delete-btn {
+            background: none;
+            border: none;
+            font-size: 18px;
+            cursor: pointer;
+            padding: 4px 8px;
+            opacity: 0.5;
+            transition: opacity 0.2s;
+        }
+
+        .journal-delete-btn:hover {
+            opacity: 1;
+        }
+
+        .journal-tags-preview {
+            margin-top: 8px;
+        }
+
+        .journal-tag-active {
+            display: inline-block;
+            padding: 2px 8px;
+            background: var(--soft-blue);
+            border-radius: 10px;
+            font-size: 11px;
+            margin-right: 4px;
+            color: var(--deep-blue);
         }
 
         .journal-date {
@@ -1876,25 +1917,38 @@
         <div class="page-section" id="page-profile">
             <div class="profile-container">
                 <div class="profile-header">
-                    <div class="profile-avatar">👤</div>
+                    <div class="profile-avatar" id="profileAvatar">👤</div>
                     <div class="profile-info">
-                        <h2>用户</h2>
-                        <p>注册时间：2026-03-01</p>
+                        <h2 id="profileNickname">加载中...</h2>
+                        <p>用户ID：<span id="profileId">-</span></p>
+                        <p>注册时间：<span id="profileCreatedAt">-</span></p>
+                        <p>最后登录：<span id="profileLastLogin">-</span></p>
                     </div>
                 </div>
-                
+
                 <div class="profile-stats">
                     <div class="stat-card">
-                        <div class="stat-number" id="statChats">16</div>
+                        <div class="stat-number" id="statChats">-</div>
                         <div class="stat-label">对话次数</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="statJournals">3</div>
+                        <div class="stat-number" id="statJournals">-</div>
                         <div class="stat-label">日记篇数</div>
                     </div>
                     <div class="stat-card">
-                        <div class="stat-number" id="statDays">7</div>
+                        <div class="stat-number" id="statDays">-</div>
                         <div class="stat-label">使用天数</div>
+                    </div>
+                </div>
+
+                <div class="profile-stats">
+                    <div class="stat-card">
+                        <div class="stat-number" id="statEmotions">-</div>
+                        <div class="stat-label">情绪记录</div>
+                    </div>
+                    <div class="stat-card">
+                        <div class="stat-number" id="statAssessments">-</div>
+                        <div class="stat-label">测评次数</div>
                     </div>
                 </div>
 
@@ -2653,6 +2707,8 @@
                 renderJournalList();
             } else if (pageId === 'chat') {
                 initChart();
+            } else if (pageId === 'profile') {
+                loadUserProfile();
             }
             
             // 关闭移动端菜单
@@ -3122,6 +3178,62 @@
                 emotionCounts[e] = (emotionCounts[e] || 0) + 1;
             });
             return Object.keys(emotionCounts).reduce((a, b) => emotionCounts[a] > emotionCounts[b] ? a : b, 'neutral');
+        }
+
+        // ==================== 用户中心 ====================
+        async function loadUserProfile() {
+            if (!currentUserId) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/profile/${currentUserId}`, {
+                    headers: getAuthHeaders()
+                });
+
+                if (!response.ok) {
+                    throw new Error('获取用户信息失败');
+                }
+
+                const result = await response.json();
+                if (result.code === 200 && result.data) {
+                    const data = result.data;
+
+                    // 更新用户基本信息
+                    document.getElementById('profileId').textContent = data.id || '-';
+                    document.getElementById('profileNickname').textContent = data.nickname || data.username || '用户';
+
+                    // 更新头像
+                    const avatarEl = document.getElementById('profileAvatar');
+                    if (data.avatar_url) {
+                        avatarEl.innerHTML = `<img src="${data.avatar_url}" style="width:100%;height:100%;border-radius:50%;object-fit:cover;">`;
+                    } else {
+                        avatarEl.textContent = '👤';
+                    }
+
+                    // 格式化并显示注册时间
+                    if (data.created_at) {
+                        const createdDate = new Date(data.created_at);
+                        document.getElementById('profileCreatedAt').textContent = createdDate.toLocaleDateString('zh-CN');
+                    }
+
+                    // 格式化并显示最后登录时间
+                    if (data.last_login) {
+                        const lastLoginDate = new Date(data.last_login);
+                        document.getElementById('profileLastLogin').textContent = lastLoginDate.toLocaleDateString('zh-CN');
+                    }
+
+                    // 更新统计数据
+                    document.getElementById('statChats').textContent = data.chat_count || 0;
+                    document.getElementById('statJournals').textContent = data.journal_count || 0;
+                    document.getElementById('statDays').textContent = data.usage_days || 1;
+                    document.getElementById('statEmotions').textContent = data.emotion_count || 0;
+                    document.getElementById('statAssessments').textContent = data.assessment_count || 0;
+                }
+            } catch (error) {
+                console.error('加载用户信息失败:', error);
+                document.getElementById('profileNickname').textContent = '加载失败';
+            }
         }
 
         async function loadAIHealingPlan() {
@@ -4038,72 +4150,161 @@
             btn.classList.toggle('active');
         }
 
-        function saveJournal() {
+        async function saveJournal() {
             const content = document.getElementById('journalInput').value.trim();
             if (!content) {
                 alert('请输入日记内容');
                 return;
             }
-            
-            const tags = [];
-            document.querySelectorAll('.journal-tag.active').forEach(tag => {
-                tags.push(tag.textContent);
-            });
-            
-            const journal = {
-                date: new Date().toLocaleString('zh-CN'),
-                content: content,
-                tags: tags
-            };
-            
-            // 保存到本地存储
-            const journalsKey = getJournalsKey();
-            let journals = JSON.parse(localStorage.getItem(journalsKey) || '[]');
-            journals.unshift(journal);
-            localStorage.setItem(journalsKey, JSON.stringify(journals));
-            
-            alert('日记保存成功！');
-            document.getElementById('journalInput').value = '';
-            document.querySelectorAll('.journal-tag.active').forEach(tag => tag.classList.remove('active'));
-            renderJournalList();
-        }
 
-        function renderJournalList() {
-            const journalsKey = getJournalsKey();
-            const journals = JSON.parse(localStorage.getItem(journalsKey) || '[]');
-            const list = document.getElementById('journalList');
-            
-            if (journals.length === 0) {
-                list.innerHTML = '<p style="color: var(--text-light); text-align: center; padding: 20px;">暂无日记记录</p>';
+            if (!currentUserId) {
+                alert('请先登录');
                 return;
             }
-            
-            let html = '';
-            journals.forEach((journal, idx) => {
-                html += `
-                    <div class="journal-item" onclick="showJournalDetail(${idx})">
-                        <div class="journal-date">${journal.date}</div>
-                        <div class="journal-content">${journal.content.substring(0, 100)}${journal.content.length > 100 ? '...' : ''}</div>
-                    </div>
-                `;
+
+            const tags = [];
+            document.querySelectorAll('.journal-tag.active').forEach(tag => {
+                tags.push(tag.textContent.replace(/[\u0000-\u001F\u007F-\u009F]/g, '').trim());
             });
-            list.innerHTML = html;
+
+            try {
+                const response = await fetch(`${API_BASE}/diary`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...getAuthHeaders()
+                    },
+                    body: JSON.stringify({
+                        user_id: currentUserId,
+                        content: content,
+                        mood_tags: tags,
+                        emotion_type: tags.length > 0 ? tags[0] : null
+                    })
+                });
+
+                const result = await response.json();
+                if (result.code === 200) {
+                    alert('日记保存成功！');
+                    document.getElementById('journalInput').value = '';
+                    document.querySelectorAll('.journal-tag.active').forEach(tag => tag.classList.remove('active'));
+                    renderJournalList();
+                } else {
+                    alert(result.message || '保存失败');
+                }
+            } catch (error) {
+                console.error('保存日记失败:', error);
+                alert('保存失败，请重试');
+            }
         }
 
-        function showJournalDetail(idx) {
-            const journalsKey = getJournalsKey();
-            const journals = JSON.parse(localStorage.getItem(journalsKey) || '[]');
-            const journal = journals[idx];
-            
-            document.getElementById('modalBody').innerHTML = `
-                <div style="margin-bottom: 16px; color: var(--text-light);">${journal.date}</div>
-                <div style="margin-bottom: 16px;">
-                    ${journal.tags.map(t => `<span style="display: inline-block; padding: 4px 12px; background: var(--soft-blue); border-radius: 12px; font-size: 13px; margin-right: 8px;">${t}</span>`).join('')}
-                </div>
-                <div style="line-height: 1.8; white-space: pre-wrap;">${journal.content}</div>
-            `;
-            
-            document.getElementById('journalModal').classList.add('active');
+        async function renderJournalList() {
+            if (!currentUserId) {
+                document.getElementById('journalList').innerHTML = '<p style="color: var(--text-light); text-align: center; padding: 20px;">请先登录查看日记</p>';
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/diary/${currentUserId}`, {
+                    headers: getAuthHeaders()
+                });
+
+                const result = await response.json();
+                const list = document.getElementById('journalList');
+
+                if (result.code !== 200 || !result.data.items || result.data.items.length === 0) {
+                    list.innerHTML = '<p style="color: var(--text-light); text-align: center; padding: 20px;">暂无日记记录</p>';
+                    return;
+                }
+
+                const diaries = result.data.items;
+                let html = '';
+                diaries.forEach((diary) => {
+                    const date = new Date(diary.created_at).toLocaleString('zh-CN');
+                    const preview = diary.content.substring(0, 80) + (diary.content.length > 80 ? '...' : '');
+                    const tagsHtml = diary.mood_tags && diary.mood_tags.length > 0
+                        ? diary.mood_tags.map(t => `<span class="journal-tag-active">${t}</span>`).join('')
+                        : '';
+
+                    html += `
+                        <div class="journal-item">
+                            <div class="journal-item-header" onclick="showJournalDetail(${diary.id})">
+                                <div class="journal-date">${date}</div>
+                                <div class="journal-content">${preview}</div>
+                                ${tagsHtml ? `<div class="journal-tags-preview">${tagsHtml}</div>` : ''}
+                            </div>
+                            <button class="journal-delete-btn" onclick="deleteJournal(${diary.id}, event)">🗑️</button>
+                        </div>
+                    `;
+                });
+                list.innerHTML = html;
+            } catch (error) {
+                console.error('加载日记失败:', error);
+                document.getElementById('journalList').innerHTML = '<p style="color: var(--text-light); text-align: center; padding: 20px;">加载失败</p>';
+            }
+        }
+
+        async function showJournalDetail(diaryId) {
+            try {
+                const response = await fetch(`${API_BASE}/diary/detail/${diaryId}`, {
+                    headers: getAuthHeaders()
+                });
+
+                const result = await response.json();
+                if (result.code !== 200 || !result.data) {
+                    alert('获取日记详情失败');
+                    return;
+                }
+
+                const diary = result.data;
+                const date = new Date(diary.created_at).toLocaleString('zh-CN');
+                const tagsHtml = diary.mood_tags && diary.mood_tags.length > 0
+                    ? diary.mood_tags.map(t => `<span style="display: inline-block; padding: 4px 12px; background: var(--soft-blue); border-radius: 12px; font-size: 13px; margin-right: 8px;">${t}</span>`).join('')
+                    : '';
+
+                document.getElementById('modalBody').innerHTML = `
+                    <div style="margin-bottom: 16px; color: var(--text-light);">${date}</div>
+                    ${tagsHtml ? `<div style="margin-bottom: 16px;">${tagsHtml}</div>` : ''}
+                    <div style="line-height: 1.8; white-space: pre-wrap;">${diary.content}</div>
+                    <div style="margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee;">
+                        <button onclick="deleteJournal(${diary.id})" style="background: #ff4757; color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer; margin-right: 8px;">🗑️ 删除</button>
+                        <button onclick="closeModal()" style="background: var(--primary-blue); color: white; border: none; padding: 8px 16px; border-radius: 8px; cursor: pointer;">关闭</button>
+                    </div>
+                `;
+
+                document.getElementById('journalModal').classList.add('active');
+            } catch (error) {
+                console.error('获取日记详情失败:', error);
+                alert('获取日记详情失败');
+            }
+        }
+
+        async function deleteJournal(diaryId, event) {
+            if (event) {
+                event.stopPropagation();
+            }
+
+            if (!confirm('确定要删除这篇日记吗？')) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`${API_BASE}/diary/${diaryId}`, {
+                    method: 'DELETE',
+                    headers: getAuthHeaders()
+                });
+
+                const result = await response.json();
+                if (result.code === 200) {
+                    alert('日记已删除');
+                    closeModal();
+                    renderJournalList();
+                } else {
+                    alert(result.message || '删除失败');
+                }
+            } catch (error) {
+                console.error('删除日记失败:', error);
+                alert('删除失败，请重试');
+            }
         }
 
         function closeModal() {
