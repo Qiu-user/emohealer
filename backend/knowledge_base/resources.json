@@ -1,5 +1,5 @@
 {
-    "version": "1.0",
+    "version": "1.1",
     "categories": {
         "meditation": {
             "name": "冥想课程",
@@ -49,6 +49,69 @@
                     "target_emotions": ["neutral", "confused"],
                     "level": "入门",
                     "url": "#meditation-gratitude"
+                },
+                {
+                    "id": "med_006",
+                    "title": "深度放松冥想",
+                    "description": "引导全身深度放松，释放紧张与压力",
+                    "duration": "20分钟",
+                    "target_emotions": ["anxious", "tired", "fear"],
+                    "level": "进阶",
+                    "url": "#meditation-deep-relax"
+                },
+                {
+                    "id": "med_007",
+                    "title": "专注力训练冥想",
+                    "description": "提升专注力和注意力",
+                    "duration": "10分钟",
+                    "target_emotions": ["confused", "anxious"],
+                    "level": "入门",
+                    "url": "#meditation-focus"
+                },
+                {
+                    "id": "med_008",
+                    "title": "睡眠引导冥想",
+                    "description": "帮助快速入睡，改善睡眠质量",
+                    "duration": "25分钟",
+                    "target_emotions": ["tired", "anxious"],
+                    "level": "入门",
+                    "url": "#meditation-sleep"
+                },
+                {
+                    "id": "med_009",
+                    "title": "山林漫步冥想",
+                    "description": "想象漫步自然，获得内心宁静",
+                    "duration": "15分钟",
+                    "target_emotions": ["sad", "anxious", "lonely"],
+                    "level": "入门",
+                    "url": "#meditation-nature"
+                },
+                {
+                    "id": "med_010",
+                    "title": "接纳承诺冥想",
+                    "description": "学会接纳当下，采取积极行动",
+                    "duration": "18分钟",
+                    "target_emotions": ["confused", "anxious", "sad"],
+                    "level": "进阶",
+                    "url": "#meditation-act"
+                },
+                {
+                    "id": "med_011",
+                    "title": "海洋之心冥想",
+                    "description": "想象海浪声带来平静与疗愈",
+                    "duration": "12分钟",
+                    "target_emotions": ["anxious", "sad", "fear"],
+                    "level": "入门",
+                    "url": "#meditation-ocean"
+                },
+                {
+                    "id": "med_012",
+                    "title": "内在小孩疗愈",
+                    "description": "与内在小孩对话，修复童年创伤",
+                    "duration": "22分钟",
+                    "target_emotions": ["sad", "lonely", "guilty"],
+                    "level": "高阶",
+                    "url": "#meditation-inner-child"
                 }
             ]
         },
@@ -109,6 +172,78 @@
                     "target_emotions": ["tired", "anxious"],
                     "category": "身心健康",
                     "url": "#article-sleep"
+                },
+                {
+                    "id": "art_007",
+                    "title": "正念冥想的科学依据",
+                    "description": "冥想如何改变大脑和改善情绪",
+                    "read_time": "8分钟",
+                    "target_emotions": ["anxious", "tired", "sad"],
+                    "category": "科学知识",
+                    "url": "#article-mindfulness-science"
+                },
+                {
+                    "id": "art_008",
+                    "title": "识别负面自动思维",
+                    "description": "觉察并改变有害的思维模式",
+                    "read_time": "7分钟",
+                    "target_emotions": ["sad", "anxious", "confused"],
+                    "category": "认知调整",
+                    "url": "#article-negative-thoughts"
+                },
+                {
+                    "id": "art_009",
+                    "title": "职场压力管理指南",
+                    "description": "应对工作压力保持心理健康",
+                    "read_time": "6分钟",
+                    "target_emotions": ["anxious", "tired", "confused"],
+                    "category": "职场心理",
+                    "url": "#article-work-stress"
+                },
+                {
+                    "id": "art_010",
+                    "title": "原生家庭影响解析",
+                    "description": "理解早期经历如何塑造现在",
+                    "read_time": "10分钟",
+                    "target_emotions": ["sad", "confused", "lonely"],
+                    "category": "个人成长",
+                    "url": "#article-family"
+                },
+                {
+                    "id": "art_011",
+                    "title": "提升自尊心的10个练习",
+                    "description": "建立健康的自我价值感",
+                    "read_time": "7分钟",
+                    "target_emotions": ["sad", "lonely", "confused"],
+                    "category": "自我成长",
+                    "url": "#article-self-esteem"
+                },
+                {
+                    "id": "art_012",
+                    "title": "哀伤与失去的心理疗愈",
+                    "description": "面对失去，如何走出悲伤",
+                    "read_time": "8分钟",
+                    "target_emotions": ["sad", "lonely", "guilty"],
+                    "category": "哀伤疗愈",
+                    "url": "#article-grief"
+                },
+                {
+                    "id": "art_013",
+                    "title": "社交恐惧症自助指南",
+                    "description": "克服社交焦虑，建立自信",
+                    "read_time": "7分钟",
+                    "target_emotions": ["anxious", "fear", "lonely"],
+                    "category": "焦虑处理",
+                    "url": "#article-social-anxiety"
+                },
+                {
+                    "id": "art_014",
+                    "title": "强迫症的认知行为干预",
+                    "description": "了解强迫症及自助方法",
+                    "read_time": "9分钟",
+                    "target_emotions": ["anxious", "fear", "confused"],
+                    "category": "强迫相关",
+                    "url": "#article-ocd"
                 }
             ]
         },
@@ -163,6 +298,70 @@
                     "description": "创伤疗愈的心理学经典",
                     "target_emotions": ["sad", "fear", "anxious"],
                     "category": "创伤疗愈"
+                },
+                {
+                    "id": "book_007",
+                    "title": "少有人走的路",
+                    "author": "斯科特·派克",
+                    "description": "心智成熟的旅程",
+                    "target_emotions": ["confused", "sad", "anxious"],
+                    "category": "心灵成长"
+                },
+                {
+                    "id": "book_008",
+                    "title": "亲密关系",
+                    "author": "罗兰·米勒",
+                    "description": "通往灵魂的桥梁",
+                    "target_emotions": ["lonely", "confused", "sad"],
+                    "category": "人际关系"
+                },
+                {
+                    "id": "book_009",
+                    "title": "原生家庭",
+                    "author": "苏珊·福沃德",
+                    "description": "如何修补自己的性格缺陷",
+                    "target_emotions": ["sad", "guilty", "confused"],
+                    "category": "家庭疗愈"
+                },
+                {
+                    "id": "book_010",
+                    "title": "蛤蟆先生去看心理医生",
+                    "author": "罗伯特·戴博德",
+                    "description": "了解心理咨询的入门故事",
+                    "target_emotions": ["sad", "anxious", "confused"],
+                    "category": "入门读物"
+                },
+                {
+                    "id": "book_011",
+                    "title": "活出生命的意义",
+                    "author": "维克多·弗兰克尔",
+                    "description": "意义治疗的经典之作",
+                    "target_emotions": ["sad", "confused", "lonely"],
+                    "category": "存在主义"
+                },
+                {
+                    "id": "book_012",
+                    "title": "自卑与超越",
+                    "author": "阿德勒",
+                    "description": "理解自卑情结",
+                    "target_emotions": ["sad", "confused", "lonely"],
+                    "category": "心理学经典"
+                },
+                {
+                    "id": "book_013",
+                    "title": "我们时代的神经症人格",
+                    "author": "卡伦·霍妮",
+                    "description": "认识现代人的焦虑",
+                    "target_emotions": ["anxious", "confused", "sad"],
+                    "category": "精神分析"
+                },
+                {
+                    "id": "book_014",
+                    "title": "也许你该找个人聊聊",
+                    "author": "洛莉·戈特利布",
+                    "description": "心理咨询师的治愈之旅",
+                    "target_emotions": ["sad", "anxious", "lonely"],
+                    "category": "心理咨询"
                 }
             ]
         },
@@ -209,6 +408,62 @@
                     "duration": "40分钟",
                     "target_emotions": ["tired", "anxious"],
                     "category": "睡前放松"
+                },
+                {
+                    "id": "mus_006",
+                    "title": "森林鸟鸣",
+                    "description": "清晨森林中的鸟鸣声",
+                    "duration": "90分钟",
+                    "target_emotions": ["anxious", "sad", "tired"],
+                    "category": "自然音"
+                },
+                {
+                    "id": "mus_007",
+                    "title": "水晶钵冥想",
+                    "description": "空灵的水晶钵声音引导进入深度冥想",
+                    "duration": "35分钟",
+                    "target_emotions": ["anxious", "confused", "sad"],
+                    "category": "冥想音乐"
+                },
+                {
+                    "id": "mus_008",
+                    "title": "爱的频率",
+                    "description": "打开心轮，释放爱与温暖",
+                    "duration": "28分钟",
+                    "target_emotions": ["lonely", "sad", "fear"],
+                    "category": "治愈音乐"
+                },
+                {
+                    "id": "mus_009",
+                    "title": "Theta波睡眠音乐",
+                    "description": "促进深度睡眠和身体修复",
+                    "duration": "60分钟",
+                    "target_emotions": ["tired", "anxious"],
+                    "category": "睡眠音乐"
+                },
+                {
+                    "id": "mus_010",
+                    "title": "禅意古琴",
+                    "description": "中国传统古琴名曲，宁静致远",
+                    "duration": "45分钟",
+                    "target_emotions": ["confused", "anxious", "sad"],
+                    "category": "禅意音乐"
+                },
+                {
+                    "id": "mus_011",
+                    "title": "海浪轻拍",
+                    "description": "听着海浪声感受大海的宽广",
+                    "duration": "120分钟",
+                    "target_emotions": ["anxious", "sad", "lonely"],
+                    "category": "自然音"
+                },
+                {
+                    "id": "mus_012",
+                    "title": "喜悦之光",
+                    "description": "提升振动频率，带来喜悦",
+                    "duration": "22分钟",
+                    "target_emotions": ["sad", "tired", "neutral"],
+                    "category": "能量音乐"
                 }
             ]
         },
@@ -260,6 +515,69 @@
                     "duration": "60分钟",
                     "target_emotions": ["sad", "fear", "guilty"],
                     "type": "深度咨询"
+                },
+                {
+                    "id": "con_006",
+                    "title": "睡眠障碍咨询",
+                    "description": "改善失眠和睡眠质量问题",
+                    "price": "299元/次",
+                    "duration": "50分钟",
+                    "target_emotions": ["tired", "anxious"],
+                    "type": "专业咨询"
+                },
+                {
+                    "id": "con_007",
+                    "title": "恋爱婚姻咨询",
+                    "description": "亲密关系问题专业辅导",
+                    "price": "399元/次",
+                    "duration": "60分钟",
+                    "target_emotions": ["sad", "lonely", "confused", "angry"],
+                    "type": "情感咨询"
+                },
+                {
+                    "id": "con_008",
+                    "title": "焦虑症心理咨询",
+                    "description": "专业焦虑症认知行为治疗",
+                    "price": "350元/次",
+                    "duration": "50分钟",
+                    "target_emotions": ["anxious", "fear"],
+                    "type": "专业治疗"
+                },
+                {
+                    "id": "con_009",
+                    "title": "抑郁症心理辅导",
+                    "description": "专业抑郁症支持性心理治疗",
+                    "price": "350元/次",
+                    "duration": "50分钟",
+                    "target_emotions": ["sad", "tired", "lonely"],
+                    "type": "专业治疗"
+                },
+                {
+                    "id": "con_010",
+                    "title": "儿童青少年咨询",
+                    "description": "未成年人心理发展指导",
+                    "price": "300元/次",
+                    "duration": "45分钟",
+                    "target_emotions": ["sad", "anxious", "confused"],
+                    "type": "专业咨询"
+                },
+                {
+                    "id": "con_011",
+                    "title": "家庭治疗套餐",
+                    "description": "解决家庭矛盾，改善家庭关系",
+                    "price": "1200元/4次",
+                    "duration": "50分钟×4",
+                    "target_emotions": ["confused", "sad", "angry", "lonely"],
+                    "type": "套餐服务"
+                },
+                {
+                    "id": "con_012",
+                    "title": "危机干预热线",
+                    "description": "紧急心理危机干预服务",
+                    "price": "150元/次",
+                    "duration": "30分钟",
+                    "target_emotions": ["sad", "fear", "anxious"],
+                    "type": "紧急服务"
                 }
             ]
         },
@@ -301,49 +619,286 @@
                     "description": "记录和分析睡眠质量",
                     "target_emotions": ["tired", "anxious"],
                     "type": "追踪工具"
+                },
+                {
+                    "id": "tool_006",
+                    "title": "认知扭曲自检表",
+                    "description": "识别10种常见认知扭曲",
+                    "target_emotions": ["sad", "anxious", "confused"],
+                    "type": "认知工具"
+                },
+                {
+                    "id": "tool_007",
+                    "title": "情绪温度计",
+                    "description": "0-100度情绪强度监测",
+                    "target_emotions": ["anxious", "angry", "sad"],
+                    "type": "监测工具"
+                },
+                {
+                    "id": "tool_008",
+                    "title": "放松音乐播放器",
+                    "description": "内置冥想和放松音乐",
+                    "target_emotions": ["anxious", "tired", "sad"],
+                    "type": "音频工具"
+                },
+                {
+                    "id": "tool_009",
+                    "title": "正念提醒APP",
+                    "description": "定时提醒进行正念练习",
+                    "target_emotions": ["neutral", "anxious", "confused"],
+                    "type": "辅助工具"
+                },
+                {
+                    "id": "tool_010",
+                    "title": "人际边界设定指南",
+                    "description": "学习健康的人际边界",
+                    "target_emotions": ["confused", "lonely", "angry"],
+                    "type": "学习工具"
+                },
+                {
+                    "id": "tool_011",
+                    "title": "焦虑急救包",
+                    "description": "即时缓解焦虑的5个技巧",
+                    "target_emotions": ["anxious", "fear"],
+                    "type": "急救工具"
+                },
+                {
+                    "id": "tool_012",
+                    "title": "自我关怀清单",
+                    "description": "照顾自己的100种方式",
+                    "target_emotions": ["sad", "tired", "lonely"],
+                    "type": "关怀工具"
+                }
+            ]
+        },
+        "product": {
+            "name": "疗愈好物",
+            "icon": "🎁",
+            "items": [
+                {
+                    "id": "prod_001",
+                    "title": "减压捏捏乐",
+                    "description": "硅胶情绪发泄球，释放压力",
+                    "price": "29元",
+                    "target_emotions": ["anxious", "angry", "tired"],
+                    "category": "减压玩具"
+                },
+                {
+                    "id": "prod_002",
+                    "title": "薰衣草精油套装",
+                    "description": "助眠放松的天然芳香疗法",
+                    "price": "89元",
+                    "target_emotions": ["anxious", "tired", "sad"],
+                    "category": "芳香疗愈"
+                },
+                {
+                    "id": "prod_003",
+                    "title": "重力减压毯",
+                    "description": "深压刺激帮助放松和入睡",
+                    "price": "259元",
+                    "target_emotions": ["anxious", "sad", "tired"],
+                    "category": "助眠用品"
+                },
+                {
+                    "id": "prod_004",
+                    "title": "沙漏计时器",
+                    "description": "5分钟沙漏，帮助正念呼吸",
+                    "price": "19元",
+                    "target_emotions": ["anxious", "confused"],
+                    "category": "冥想辅助"
+                },
+                {
+                    "id": "prod_005",
+                    "title": "情绪卡片套装",
+                    "description": "认知情绪的视觉辅助工具",
+                    "price": "45元",
+                    "target_emotions": ["confused", "sad", "neutral"],
+                    "category": "心理工具"
+                },
+                {
+                    "id": "prod_006",
+                    "title": "白噪音助眠仪",
+                    "description": "多种自然声音帮助入眠",
+                    "price": "169元",
+                    "target_emotions": ["tired", "anxious"],
+                    "category": "助眠用品"
+                },
+                {
+                    "id": "prod_007",
+                    "title": "冥想坐垫",
+                    "description": "加厚舒适冥想蒲团",
+                    "price": "99元",
+                    "target_emotions": ["anxious", "sad", "neutral"],
+                    "category": "冥想辅助"
+                },
+                {
+                    "id": "prod_008",
+                    "title": "芳香蜡烛套装",
+                    "description": "天然植物香氛蜡烛4入",
+                    "price": "79元",
+                    "target_emotions": ["sad", "anxious", "tired"],
+                    "category": "芳香疗愈"
+                },
+                {
+                    "id": "prod_009",
+                    "title": "日记本套装",
+                    "description": "引导式情绪日记本+笔",
+                    "price": "39元",
+                    "target_emotions": ["sad", "anxious", "neutral"],
+                    "category": "记录工具"
+                },
+                {
+                    "id": "prod_010",
+                    "title": "经络按摩棒",
+                    "description": "疏通经络缓解身心疲惫",
+                    "price": "59元",
+                    "target_emotions": ["tired", "sad", "anxious"],
+                    "category": "按摩理疗"
+                },
+                {
+                    "id": "prod_011",
+                    "title": "水晶手链",
+                    "description": "紫水晶助眠安神手链",
+                    "price": "128元",
+                    "target_emotions": ["anxious", "sad", "confused"],
+                    "category": "能量饰品"
+                },
+                {
+                    "id": "prod_012",
+                    "title": "眼部热敷仪",
+                    "description": "温热敷眼缓解眼疲劳和焦虑",
+                    "price": "149元",
+                    "target_emotions": ["tired", "anxious"],
+                    "category": "放松仪器"
+                }
+            ]
+        },
+        "course": {
+            "name": "系统课程",
+            "icon": "📝",
+            "items": [
+                {
+                    "id": "course_001",
+                    "title": "21天正念入门课程",
+                    "description": "每天15分钟，21天养成正念习惯",
+                    "price": "299元",
+                    "duration": "21天",
+                    "target_emotions": ["anxious", "sad", "confused"],
+                    "level": "入门",
+                    "category": "正念课程"
+                },
+                {
+                    "id": "course_002",
+                    "title": "情绪管理训练营",
+                    "description": "8周系统学习情绪管理技能",
+                    "price": "599元",
+                    "duration": "8周",
+                    "target_emotions": ["angry", "anxious", "sad"],
+                    "level": "进阶",
+                    "category": "情绪课程"
+                },
+                {
+                    "id": "course_003",
+                    "title": "睡眠改善计划",
+                    "description": "科学方法改善睡眠质量",
+                    "price": "399元",
+                    "duration": "4周",
+                    "target_emotions": ["tired", "anxious"],
+                    "level": "入门",
+                    "category": "睡眠课程"
+                },
+                {
+                    "id": "course_004",
+                    "title": "焦虑脱敏训练",
+                    "description": "认知行为方法克服焦虑",
+                    "price": "499元",
+                    "duration": "6周",
+                    "target_emotions": ["anxious", "fear"],
+                    "level": "进阶",
+                    "category": "焦虑治疗"
+                },
+                {
+                    "id": "course_005",
+                    "title": "自我成长工作坊",
+                    "description": "探索自我潜能个人成长课程",
+                    "price": "699元",
+                    "duration": "10周",
+                    "target_emotions": ["confused", "sad", "lonely"],
+                    "level": "进阶",
+                    "category": "成长课程"
+                },
+                {
+                    "id": "course_006",
+                    "title": "人际沟通技巧",
+                    "description": "提升沟通能力改善人际关系",
+                    "price": "349元",
+                    "duration": "4周",
+                    "target_emotions": ["lonely", "confused", "angry"],
+                    "level": "入门",
+                    "category": "沟通课程"
+                },
+                {
+                    "id": "course_007",
+                    "title": "冥想导师培训",
+                    "description": "成为冥想引导师的系统培训",
+                    "price": "1299元",
+                    "duration": "12周",
+                    "target_emotions": ["neutral", "confused", "sad"],
+                    "level": "高阶",
+                    "category": "师资培训"
+                },
+                {
+                    "id": "course_008",
+                    "title": "认知行为疗法自学课程",
+                    "description": "自助式CBT方法学习",
+                    "price": "449元",
+                    "duration": "6周",
+                    "target_emotions": ["sad", "anxious", "angry"],
+                    "level": "进阶",
+                    "category": "治疗课程"
                 }
             ]
         }
     },
     "recommendation_rules": {
         "sad": {
-            "priority": ["meditation", "article", "consultation"],
+            "priority": ["meditation", "article", "consultation", "music"],
             "reason": "根据您目前的状态，推荐冥想放松和心理文章帮助调节情绪"
         },
         "anxious": {
-            "priority": ["meditation", "music", "tool"],
+            "priority": ["meditation", "music", "tool", "article"],
             "reason": "您似乎有些焦虑，推荐冥想和呼吸练习帮助缓解"
         },
         "angry": {
-            "priority": ["meditation", "music", "article"],
+            "priority": ["meditation", "music", "article", "tool"],
             "reason": "建议通过冥想和音乐放松身心"
         },
         "tired": {
-            "priority": ["music", "article", "tool"],
+            "priority": ["music", "article", "tool", "product"],
             "reason": "您看起来有些疲惫，推荐放松音乐和休息技巧"
         },
         "fear": {
-            "priority": ["meditation", "article", "consultation"],
+            "priority": ["meditation", "article", "consultation", "music"],
             "reason": "建议通过正念练习和专业知识缓解恐惧"
         },
         "lonely": {
-            "priority": ["article", "consultation", "book"],
+            "priority": ["article", "consultation", "book", "course"],
             "reason": "推荐阅读和人际相关资源，帮助您感受连接"
         },
         "guilty": {
-            "priority": ["meditation", "article", "book"],
+            "priority": ["meditation", "article", "book", "course"],
             "reason": "推荐自我慈悲冥想和心理文章帮助自我接纳"
         },
         "confused": {
-            "priority": ["article", "book", "consultation"],
+            "priority": ["article", "book", "consultation", "course"],
             "reason": "推荐相关知识帮助理清思路"
         },
         "happy": {
-            "priority": ["article", "book"],
+            "priority": ["article", "book", "course"],
             "reason": "您状态很好！推荐一些成长类内容"
         },
         "neutral": {
-            "priority": ["article", "tool"],
+            "priority": ["article", "tool", "course", "product"],
             "reason": "推荐一些心理知识帮助自我提升"
         }
     }
