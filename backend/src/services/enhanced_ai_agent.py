@@ -193,6 +193,28 @@ class EnhancedPromptManager:
 - 回复长度控制在100-300字
 - 根据对话阶段选择合适的角色
 
+## 服务范围
+你只能回答与以下主题相关的问题：
+- 情绪管理（焦虑、抑郁、愤怒、恐惧等）
+- 心理健康与心理调适
+- 人际关系与沟通
+- 工作压力、学习压力
+- 失眠、睡眠问题
+- 自我成长与心灵疗愈
+- 正念、冥想、放松练习
+- 危机情绪处理
+
+## 超出范围的拒绝
+对于以下类型的问题，拒绝回答：
+- 编程、技术问题
+- 政治、法律、医疗诊断
+- 历史、地理、科学知识
+- 娱乐、游戏、体育
+- 股票、理财、商业
+
+拒绝时使用礼貌、简洁的回复：
+"抱歉，这个问题不在我的能力范围内。我是专注于情绪疗愈的AI助手，只能回答与情绪、心理健康相关的议题。如果需要其他帮助，请寻求相关专业资源。"
+
 ## 安全边界
 - 如果用户表达自杀/自伤念头，立即提供危机干预信息
 - 不诊断精神疾病，建议严重情况寻求专业帮助
@@ -1418,6 +1440,58 @@ class EnhancedEmoHealerAgent:
         except Exception as e:
             print(f"Failed to load history: {e}")
             return []
+
+    def _check_out_of_scope(self, message: str) -> bool:
+        """检查消息是否超出服务范围"""
+        # 定义超出范围的关键词
+        out_of_scope_keywords = [
+            # 编程/技术
+            "代码", "编程", "python", "java", "javascript", "前端", "后端",
+            "数据库", "api", "git", "docker", "服务器", "部署",
+
+            # 娱乐/游戏
+            "游戏", "电影", "音乐", "明星", "娱乐", "八卦",
+
+            # 政治/法律
+            "政治", "选举", "法律", "诉讼", "犯罪", "警察",
+
+            # 医疗诊断
+            "诊断", "开药", "医院", "手术", "治疗疾病",
+
+            # 理财/股票
+            "股票", "基金", "投资", "理财", "赚钱", "贷款",
+
+            # 历史/地理
+            "历史", "朝代", "地理", "国家", "首都",
+
+            # 科学知识
+            "物理", "化学", "生物", "天文", "科学",
+        ]
+
+        # 如果消息包含这些关键词，可能超出范围
+        for keyword in out_of_scope_keywords:
+            if keyword in message.lower():
+                return True
+
+        # 定义服务范围的关键词
+        in_scope_keywords = [
+            "情绪", "心情", "感受", "难过", "开心", "焦虑", "抑郁",
+            "压力", "失眠", "睡眠", "心理", "疗愈", "疏导",
+            "关系", "朋友", "家人", "同事", "领导", "沟通",
+            "自卑", "自信", "迷茫", "困惑", "担心", "害怕",
+            "愤怒", "生气", "烦躁", "委屈", "孤独", "无助",
+            "安慰", "倾诉", "建议", "帮助", "支持", "陪伴"
+        ]
+
+        # 如果不包含任何服务范围关键词，可能超出范围
+        has_scope_keyword = any(keyword in message for keyword in in_scope_keywords)
+
+        # 检查是否是问句但不含情绪相关词汇
+        if "?" in message or "怎么" in message or "如何" in message:
+            if not has_scope_keyword:
+                return True
+
+        return False
     
     def get_context(self, user_id: int) -> ConversationContext:
         """获取或创建对话上下文（从数据库加载历史记录）"""
@@ -1613,7 +1687,21 @@ class EnhancedEmoHealerAgent:
                 'agent_role': 'listener',
                 'timestamp': datetime.now().isoformat()
             }
-        
+
+        # 检查话题是否在服务范围内
+        out_of_scope = self._check_out_of_scope(message)
+        if out_of_scope:
+            return {
+                'reply': "抱歉，这个问题不在我的能力范围内。我是专注于情绪疗愈的AI助手，只能回答与情绪、心理健康相关的议题。如果需要其他帮助，请寻求相关专业资源。",
+                'emotion': 'neutral',
+                'confidence': 1.0,
+                'is_crisis': False,
+                'crisis_level': 'none',
+                'triggers': [],
+                'agent_role': 'listener',
+                'timestamp': datetime.now().isoformat()
+            }
+
         # 生成回复
         if self.use_llm and self.llm.provider != 'mock':
             llm_provider = self.llm

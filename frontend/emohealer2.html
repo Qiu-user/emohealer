@@ -2693,12 +2693,14 @@
             }
             
             currentPage = pageId;
-            
+
             // 初始化页面相关功能
             if (pageId === 'report') {
-                initChart();
-                renderCalendar();
-                loadEmotionReport(); // 加载情绪报告数据
+                // 先加载情绪报告数据（API数据），加载完成后再渲染图表
+                loadEmotionReport().then(() => {
+                    initChart();      // 使用API数据初始化图表
+                    renderCalendar(); // 使用API数据渲染日历
+                });
             } else if (pageId === 'plan') {
                 loadAIHealingPlan(); // 加载AI疗愈方案
             } else if (pageId === 'breathing') {
@@ -2970,88 +2972,162 @@
                     console.log('图表容器不存在或不可见，跳过初始化');
                     return;
                 }
-                
+
+                // 加载用户情绪历史
+                loadEmotionHistory();
+
+                // 检查是否有真实数据（API数据或本地数据）
+                const hasApiData = emotionReportData && emotionReportData.daily_trends &&
+                                   Object.keys(emotionReportData.daily_trends).length > 0;
+                const hasLocalData = hasEmotionData();
+
+                if (!hasApiData && !hasLocalData) {
+                    // 显示空状态
+                    chartDom.innerHTML = `
+                        <div style="display: flex; flex-direction: column; align-items: center; justify-content: center; height: 300px; color: #718096;">
+                            <div style="font-size: 48px; margin-bottom: 16px;">📊</div>
+                            <div style="font-size: 16px; font-weight: 500;">暂无情绪数据</div>
+                            <div style="font-size: 14px; margin-top: 8px;">开始与AI对话后，数据将会显示在这里</div>
+                        </div>
+                    `;
+                    return;
+                }
+
                 // 销毁已存在的图表实例
                 try {
                     const oldChart = echarts.getInstanceByDom(chartDom);
                     if (oldChart) oldChart.dispose();
                 } catch(e) {}
-                
+
                 const myChart = echarts.init(chartDom);
 
-                fetch(`${API_BASE}/emotion/trend`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_id: currentUserId, period: currentPeriod })
-                })
-                .then(res => res.json())
-                .then(result => {
-                    let data;
-                    if (result.code === 200 && result.data && result.data.length > 0) {
-                        data = result.data;
-                    } else {
-                        data = generateMockData();
-                    }
-                    
-                    const days = data.map(d => d.date);
-                    const overall = data.map(d => d.overall);
-                    const anxiety = data.map(d => d.anxiety);
-                    const happiness = data.map(d => d.happiness);
+                // 情绪分数映射
+                const emotionScoreMap = {
+                    'happy': 85,
+                    'neutral': 60,
+                    'sad': 40,
+                    'anxious': 30,
+                    'angry': 25,
+                    'tired': 45
+                };
 
-                    const option = {
-                        tooltip: { trigger: 'axis' },
-                        grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
-                        xAxis: {
-                            type: 'category',
-                            boundaryGap: false,
-                            data: days,
-                            axisLine: { lineStyle: { color: '#E2E8F0' } },
-                            axisLabel: { color: '#718096', fontSize: 11 }
-                        },
-                        yAxis: {
-                            type: 'value',
-                            min: 0,
-                            max: 100,
-                            axisLabel: { color: '#718096' },
-                            splitLine: { lineStyle: { color: '#F0F0F0' } }
-                        },
-                        series: [
-                            {
-                                name: '整体情绪',
-                                type: 'line',
-                                smooth: true,
-                                data: overall,
-                                lineStyle: { width: 3, color: '#7EB8DA' },
-                                areaStyle: {
-                                    color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
-                                        { offset: 0, color: 'rgba(126, 184, 218, 0.4)' },
-                                        { offset: 1, color: 'rgba(126, 184, 218, 0.05)' }
-                                    ])
-                                },
-                                symbol: 'circle', symbolSize: 8, itemStyle: { color: '#7EB8DA', borderWidth: 2, borderColor: '#fff' }
+                // 生成图表数据
+                const days = currentPeriod === 'week' ? 7 : currentPeriod === 'year' ? 12 : 30;
+                const chartData = [];
+                const today = new Date();
+
+                // 优先使用API数据
+                if (hasApiData) {
+                    const dailyTrends = emotionReportData.daily_trends;
+                    for (let i = days - 1; i >= 0; i--) {
+                        const date = new Date(today);
+                        date.setDate(date.getDate() - i);
+                        const dateStr = date.toISOString().split('T')[0];
+                        const monthDay = date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' });
+
+                        if (dailyTrends[dateStr]) {
+                            const dayData = dailyTrends[dateStr];
+                            const total = Object.values(dayData).reduce((a, b) => a + b, 0);
+                            const weightedScore = Object.entries(dayData).reduce((score, [emotion, count]) => {
+                                return score + (emotionScoreMap[emotion] || 50) * count;
+                            }, 0);
+
+                            chartData.push({
+                                date: currentPeriod === 'year' ? (date.getMonth() + 1) + '月' : monthDay,
+                                overall: Math.round(weightedScore / total),
+                                anxiety: Math.round((dayData.anxious || 0) * 30 / total + 30),
+                                happiness: Math.round((dayData.happy || 0) * 85 / total + 30)
+                            });
+                        } else {
+                            chartData.push({
+                                date: currentPeriod === 'year' ? (date.getMonth() + 1) + '月' : monthDay,
+                                overall: 50,
+                                anxiety: 40,
+                                happiness: 50
+                            });
+                        }
+                    }
+                } else {
+                    // 使用本地存储数据
+                    for (let i = days - 1; i >= 0; i--) {
+                        const date = new Date(today);
+                        date.setDate(date.getDate() - i);
+
+                        const historyIndex = userEmotionHistory.length > 0 ?
+                            Math.min(i, userEmotionHistory.length - 1) : -1;
+                        const emotionType = historyIndex >= 0 ? userEmotionHistory[historyIndex] : null;
+
+                        const overall = emotionType ? emotionScoreMap[emotionType] : 50;
+                        const anxiety = emotionType === 'anxious' ? 70 : (emotionType === 'happy' ? 20 : 40);
+                        const happiness = emotionType === 'happy' ? 80 : (emotionType === 'sad' ? 30 : 50);
+
+                        chartData.push({
+                            date: currentPeriod === 'year' ? (date.getMonth() + 1) + '月' :
+                                  date.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }),
+                            overall: overall,
+                            anxiety: anxiety,
+                            happiness: happiness
+                        });
+                    }
+                }
+
+                const chartDays = chartData.map(d => d.date);
+                const overall = chartData.map(d => d.overall);
+                const anxiety = chartData.map(d => d.anxiety);
+                const happiness = chartData.map(d => d.happiness);
+
+                const option = {
+                    tooltip: { trigger: 'axis' },
+                    grid: { left: '3%', right: '4%', bottom: '3%', top: '10%', containLabel: true },
+                    xAxis: {
+                        type: 'category',
+                        boundaryGap: false,
+                        data: chartDays,
+                        axisLine: { lineStyle: { color: '#E2E8F0' } },
+                        axisLabel: { color: '#718096', fontSize: 11 }
+                    },
+                    yAxis: {
+                        type: 'value',
+                        min: 0,
+                        max: 100,
+                        axisLabel: { color: '#718096' },
+                        splitLine: { lineStyle: { color: '#F0F0F0' } }
+                    },
+                    series: [
+                        {
+                            name: '整体情绪',
+                            type: 'line',
+                            smooth: true,
+                            data: overall,
+                            lineStyle: { width: 3, color: '#7EB8DA' },
+                            areaStyle: {
+                                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                                    { offset: 0, color: 'rgba(126, 184, 218, 0.4)' },
+                                    { offset: 1, color: 'rgba(126, 184, 218, 0.05)' }
+                                ])
                             },
-                            {
-                                name: '焦虑指数',
-                                type: 'line',
-                                smooth: true,
-                                data: anxiety,
-                                lineStyle: { width: 2, color: '#E8A598' },
-                                symbol: 'circle', symbolSize: 6, itemStyle: { color: '#E8A598', borderWidth: 2, borderColor: '#fff' }
-                            },
-                            {
-                                name: '幸福指数',
-                                type: 'line',
-                                smooth: true,
-                                data: happiness,
-                                lineStyle: { width: 2, color: '#9DD6C3' },
-                                symbol: 'circle', symbolSize: 6, itemStyle: { color: '#9DD6C3', borderWidth: 2, borderColor: '#fff' }
-                            }
-                        ]
-                    };
-                    myChart.setOption(option);
-                    window.addEventListener('resize', function() { myChart.resize(); });
-                })
-                .catch(function(err) { console.error('获取情绪数据失败:', err); });
+                            symbol: 'circle', symbolSize: 8, itemStyle: { color: '#7EB8DA', borderWidth: 2, borderColor: '#fff' }
+                        },
+                        {
+                            name: '焦虑指数',
+                            type: 'line',
+                            smooth: true,
+                            data: anxiety,
+                            lineStyle: { width: 2, color: '#E8A598' },
+                            symbol: 'circle', symbolSize: 6, itemStyle: { color: '#E8A598', borderWidth: 2, borderColor: '#fff' }
+                        },
+                        {
+                            name: '幸福指数',
+                            type: 'line',
+                            smooth: true,
+                            data: happiness,
+                            lineStyle: { width: 2, color: '#9DD6C3' },
+                            symbol: 'circle', symbolSize: 6, itemStyle: { color: '#9DD6C3', borderWidth: 2, borderColor: '#fff' }
+                        }
+                    ]
+                };
+                myChart.setOption(option);
+                window.addEventListener('resize', function() { myChart.resize(); });
             }, 200);
         }
 
@@ -3079,20 +3155,22 @@
                     btn.classList.add('active');
                 }
             });
-            initChart();
-            loadEmotionReport(); // 重新加载情绪报告
+            // 先加载数据，加载完成后再初始化图表
+            loadEmotionReport().then(() => {
+                initChart();
+            });
         }
 
         // ==================== 情绪报告功能 ====================
         let emotionReportData = null;
 
         async function loadEmotionReport() {
-            if (!currentUserId) return;
+            if (!currentUserId) return Promise.resolve();
 
             const days = currentPeriod === 'week' ? 7 : currentPeriod === 'month' ? 30 : 365;
 
             try {
-                const response = await fetch(`${API_BASE}/api/emotion/report/${currentUserId}?days=${days}`, {
+                const response = await fetch(`${API_BASE}/emotion/report/${currentUserId}?days=${days}`, {
                     headers: getAuthHeaders()
                 });
                 const result = await response.json();
@@ -3100,9 +3178,12 @@
                 if (result.code === 200) {
                     emotionReportData = result.data;
                     updateEmotionReportUI(result.data);
+                    return Promise.resolve(emotionReportData);
                 }
+                return Promise.resolve();
             } catch (error) {
                 console.error('加载情绪报告失败:', error);
+                return Promise.reject(error);
             }
         }
 
@@ -3110,6 +3191,51 @@
             // 更新统计信息
             const statsContainer = document.querySelector('.chart-container');
             if (!statsContainer) return;
+
+            // 先加载用户情绪历史（用于图表和日历）
+            loadEmotionHistory();
+
+            // 如果API没有返回有效数据且本地也没有数据，显示空状态
+            // 有效数据判断：data存在且有statistics或emotion_distribution
+            const hasApiData = data && (data.statistics || data.emotion_distribution || data.daily_trends);
+            const hasLocalData = hasEmotionData();
+
+            if (!hasApiData && !hasLocalData) {
+                const emptyHTML = `
+                    <div class="emotion-report-summary" style="background: linear-gradient(135deg, #f5f7fa 0%, #e4e8ec 100%); border-radius: 16px; padding: 30px; margin-bottom: 20px; text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 16px;">📋</div>
+                        <h4 style="color: #2d3748; margin-bottom: 12px;">暂无情绪报告</h4>
+                        <p style="color: #718096; line-height: 1.8; font-size: 14px;">
+                            开始与AI对话后，我将为您记录情绪变化<br>
+                            并生成专属的情绪分析报告
+                        </p>
+                        <div style="margin-top: 20px; padding: 15px; background: #fff; border-radius: 12px;">
+                            <div style="font-size: 14px; color: #4a5568;">
+                                <span style="color: #7EB8DA;">💡 提示：</span>每次对话后我会自动分析您的情绪状态
+                            </div>
+                        </div>
+                    </div>
+                `;
+                const existingReport = statsContainer.querySelector('.emotion-report-summary');
+                if (existingReport) {
+                    existingReport.remove();
+                }
+                statsContainer.insertAdjacentHTML('afterbegin', emptyHTML);
+                return;
+            }
+
+            // 如果API没有返回data但本地有数据，使用API返回的空数据结构
+            if (!hasApiData && hasLocalData) {
+                data = {
+                    statistics: {
+                        total_conversations: userEmotionHistory.length,
+                        avg_emotion_score: 50,
+                        crisis_alerts: 0
+                    },
+                    dominant_emotion: getDominantEmotion(),
+                    analysis: '您近期共记录了' + userEmotionHistory.length + '次情绪数据'
+                };
+            }
 
             // 添加AI分析报告
             let reportHTML = `
@@ -3167,12 +3293,28 @@
             } else {
                 userEmotionHistory = [];
             }
-            // 如果没有历史，随机选择一个情绪
+            // 如果没有历史，返回null（不随机生成）
             if (userEmotionHistory.length === 0) {
-                const emotions = ['happy', 'sad', 'anxious', 'angry', 'tired', 'neutral'];
-                return emotions[Math.floor(Math.random() * emotions.length)];
+                return null;
             }
             // 统计主导情绪
+            const emotionCounts = {};
+            userEmotionHistory.forEach(e => {
+                emotionCounts[e] = (emotionCounts[e] || 0) + 1;
+            });
+            return Object.keys(emotionCounts).reduce((a, b) => emotionCounts[a] > emotionCounts[b] ? a : b, 'neutral');
+        }
+
+        // 检查用户是否有情绪数据
+        function hasEmotionData() {
+            return userEmotionHistory && userEmotionHistory.length > 0;
+        }
+
+        // 获取主导情绪
+        function getDominantEmotion() {
+            if (!userEmotionHistory || userEmotionHistory.length === 0) {
+                return 'neutral';
+            }
             const emotionCounts = {};
             userEmotionHistory.forEach(e => {
                 emotionCounts[e] = (emotionCounts[e] || 0) + 1;
@@ -3884,38 +4026,81 @@
         function renderCalendar() {
             const grid = document.getElementById('calendarGrid');
             const title = document.getElementById('calendarTitle');
-            
+
             const year = currentMonth.getFullYear();
             const month = currentMonth.getMonth();
-            
+
             title.textContent = `${year}年${month + 1}月`;
-            
+
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const today = new Date();
-            
+
+            // 检查API是否有数据
+            const hasApiData = emotionReportData && emotionReportData.daily_trends &&
+                               Object.keys(emotionReportData.daily_trends).length > 0;
+
+            if (!hasApiData) {
+                // 无数据显示空日历
+                let html = '';
+                ['日', '一', '二', '三', '四', '五', '六'].forEach(day => {
+                    html += `<div class="calendar-day-header">${day}</div>`;
+                });
+
+                for (let i = 0; i < firstDay; i++) {
+                    html += '<div class="calendar-day"></div>';
+                }
+
+                for (let day = 1; day <= daysInMonth; day++) {
+                    const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
+                    html += `<div class="calendar-day ${isToday ? 'today' : ''}">${day}</div>`;
+                }
+
+                grid.innerHTML = html;
+                return;
+            }
+
+            // 使用API数据daily_trends
+            // 结构: {"2026-03-19": {"happy": 2, "sad": 1, "anxious": 1}}
+            const dailyTrends = emotionReportData.daily_trends;
+
+            // 从daily_trends计算某天的主导情绪
+            function getDominantEmotionFromDay(dayData) {
+                if (!dayData) return null;
+                let maxCount = 0;
+                let dominant = null;
+                for (const [emotion, count] of Object.entries(dayData)) {
+                    if (count > maxCount) {
+                        maxCount = count;
+                        dominant = emotion;
+                    }
+                }
+                return dominant;
+            }
+
             let html = '';
             ['日', '一', '二', '三', '四', '五', '六'].forEach(day => {
                 html += `<div class="calendar-day-header">${day}</div>`;
             });
-            
+
             for (let i = 0; i < firstDay; i++) {
                 html += '<div class="calendar-day"></div>';
             }
-            
+
             for (let day = 1; day <= daysInMonth; day++) {
                 const isToday = today.getDate() === day && today.getMonth() === month && today.getFullYear() === year;
-                const randomEmotion = ['happy', 'sad', 'anxious', 'angry', 'tired'][Math.floor(Math.random() * 5)];
-                const hasData = Math.random() > 0.5;
-                
+                const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayData = dailyTrends[dateStr];
+                const emotion = getDominantEmotionFromDay(dayData);
+
                 html += `
-                    <div class="calendar-day ${isToday ? 'today' : ''} ${hasData ? 'has-data' : ''}" onclick="showDateDetail(${year}, ${month + 1}, ${day})">
+                    <div class="calendar-day ${isToday ? 'today' : ''} ${emotion ? 'has-data' : ''}" onclick="showDateDetail(${year}, ${month + 1}, ${day})">
                         ${day}
-                        ${hasData ? `<div class="emotion-dot emotion-${randomEmotion}"></div>` : ''}
+                        ${emotion ? `<div class="emotion-dot emotion-${emotion}"></div>` : ''}
                     </div>
                 `;
             }
-            
+
             grid.innerHTML = html;
         }
 
