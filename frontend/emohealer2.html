@@ -1260,6 +1260,215 @@
             cursor: not-allowed;
         }
 
+        /* 商品详情模态框 */
+        .product-modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .product-modal-overlay.active {
+            display: flex;
+        }
+
+        .product-modal {
+            background: white;
+            border-radius: 24px;
+            max-width: 560px;
+            width: 100%;
+            max-height: 90vh;
+            overflow-y: auto;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+            position: relative;
+            animation: modalSlideIn 0.3s ease;
+        }
+
+        @keyframes modalSlideIn {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .product-modal-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--soft-gray);
+            border: none;
+            cursor: pointer;
+            font-size: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s;
+            z-index: 10;
+        }
+
+        .product-modal-close:hover {
+            background: var(--accent-coral);
+            color: white;
+        }
+
+        .product-modal-header {
+            padding: 30px 30px 20px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+        }
+
+        .product-modal-icon {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 40px;
+            margin: 0 auto 16px;
+        }
+
+        .product-modal-title {
+            font-size: 22px;
+            font-weight: 700;
+            color: var(--text-dark);
+            margin-bottom: 8px;
+        }
+
+        .product-modal-category {
+            font-size: 14px;
+            color: var(--text-light);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .product-modal-body {
+            padding: 24px 30px;
+        }
+
+        .product-modal-desc {
+            font-size: 15px;
+            line-height: 1.8;
+            color: var(--text-dark);
+            margin-bottom: 20px;
+        }
+
+        .product-modal-tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .product-modal-tag {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 13px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        .product-modal-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 16px;
+            padding: 16px;
+            background: var(--soft-gray);
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+
+        .product-modal-meta-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            color: var(--text-dark);
+        }
+
+        .product-modal-meta-item span {
+            font-size: 18px;
+        }
+
+        .product-modal-price {
+            text-align: center;
+            padding: 20px;
+            background: linear-gradient(135deg, #fef9f3 0%, #fdf2f0 100%);
+            border-radius: 16px;
+            margin-bottom: 20px;
+        }
+
+        .product-modal-price .price {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--accent-coral);
+        }
+
+        .product-modal-price .price.free {
+            color: #34D399;
+        }
+
+        .product-modal-price .original-price {
+            font-size: 16px;
+            color: var(--text-light);
+            text-decoration: line-through;
+            margin-top: 4px;
+        }
+
+        .product-modal-actions {
+            display: flex;
+            gap: 12px;
+            padding: 0 30px 30px;
+        }
+
+        .product-modal-actions button {
+            flex: 1;
+            padding: 14px 24px;
+            border-radius: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            border: none;
+        }
+
+        .btn-primary-gradient {
+            background: linear-gradient(135deg, var(--primary-blue), var(--deep-blue));
+            color: white;
+        }
+
+        .btn-primary-gradient:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(99, 179, 237, 0.4);
+        }
+
+        .btn-secondary {
+            background: var(--soft-gray);
+            color: var(--text-dark);
+        }
+
+        .btn-secondary:hover {
+            background: #e2e8f0;
+        }
+
         /* 心理测评 */
         .assessment-container {
             background: var(--warm-white);
@@ -2250,6 +2459,28 @@
                     <div class="store-pagination" id="storePagination">
                         <!-- 分页由JS生成 -->
                     </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 商品详情模态框 -->
+        <div class="product-modal-overlay" id="productModalOverlay" onclick="closeProductModal(event)">
+            <div class="product-modal" onclick="event.stopPropagation()">
+                <button class="product-modal-close" onclick="closeProductModal()">×</button>
+                <div class="product-modal-header">
+                    <div class="product-modal-icon" id="pmIcon"></div>
+                    <h3 class="product-modal-title" id="pmTitle"></h3>
+                    <div class="product-modal-category" id="pmCategory"></div>
+                </div>
+                <div class="product-modal-body">
+                    <p class="product-modal-desc" id="pmDesc"></p>
+                    <div class="product-modal-tags" id="pmTags"></div>
+                    <div class="product-modal-meta" id="pmMeta"></div>
+                    <div class="product-modal-price" id="pmPrice"></div>
+                </div>
+                <div class="product-modal-actions">
+                    <button class="btn-secondary" onclick="closeProductModal()">返回商城</button>
+                    <button class="btn-primary-gradient" id="pmBuyBtn" onclick="handleProductPurchase()">立即获取</button>
                 </div>
             </div>
         </div>
@@ -3687,27 +3918,88 @@
         }
 
         function showProductModal(product) {
-            const em = storeState.emotions.find(x => x.key === product.target_emotions?.[0]);
-            const alertContent = `
-                <div style="text-align: center; padding: 20px;">
-                    <div style="font-size: 48px; margin-bottom: 15px;">${product.category_icon}</div>
-                    <h3 style="margin-bottom: 10px; color: #2d3748;">${product.title}</h3>
-                    <p style="color: #718096; margin-bottom: 15px;">${product.category_name}</p>
-                    <p style="line-height: 1.8; color: #4a5568; margin-bottom: 20px;">${product.description}</p>
-                    <div style="display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin-bottom: 15px;">
-                        ${product.target_emotions.map(e => {
-                            const emotion = storeState.emotions.find(x => x.key === e);
-                            return `<span style="padding: 4px 12px; background: ${emotion?.color}20; color: ${emotion?.color}; border-radius: 15px; font-size: 12px;">${emotion?.icon || ''} ${emotion?.name || e}</span>`;
-                        }).join('')}
-                    </div>
-                    <p style="color: #718096; font-size: 14px;">
-                        ${product.price !== '免费' ? `<strong style="color: #E8A598;">💰 ${product.price}</strong>` : '<strong style="color: #34D399;">免费</strong>'} ${product.duration ? ` | ⏱ ${product.duration}` : ''} ${product.level ? ` | 📊 ${product.level}` : ''}
-                    </p>
-                    ${product.author ? `<p style="color: #718096; font-size: 13px; margin-top: 8px;">👤 ${product.author}</p>` : ''}
-                </div>
-            `;
-            alert(alertContent);
+            // 填充模态框内容
+            document.getElementById('pmIcon').textContent = product.category_icon;
+            document.getElementById('pmTitle').textContent = product.title;
+            document.getElementById('pmCategory').innerHTML = `${product.category_icon} ${product.category_name}`;
+            document.getElementById('pmDesc').textContent = product.description;
+
+            // 情绪标签
+            const tagsHtml = product.target_emotions.map(e => {
+                const emotion = storeState.emotions.find(x => x.key === e);
+                return `<span class="product-modal-tag" style="background: ${emotion?.color}20; color: ${emotion?.color};">${emotion?.icon || ''} ${emotion?.name || e}</span>`;
+            }).join('');
+            document.getElementById('pmTags').innerHTML = tagsHtml;
+
+            // 元信息
+            let metaHtml = '';
+            if (product.duration) {
+                metaHtml += `<div class="product-modal-meta-item"><span>⏱</span> ${product.duration}</div>`;
+            }
+            if (product.level) {
+                metaHtml += `<div class="product-modal-meta-item"><span>📊</span> ${product.level}</div>`;
+            }
+            if (product.author) {
+                metaHtml += `<div class="product-modal-meta-item"><span>👤</span> ${product.author}</div>`;
+            }
+            if (product.format) {
+                metaHtml += `<div class="product-modal-meta-item"><span>📱</span> ${product.format}</div>`;
+            }
+            document.getElementById('pmMeta').innerHTML = metaHtml;
+
+            // 价格区域
+            const isFree = product.price === '免费' || product.price === '0' || !product.price;
+            let priceHtml = '';
+            if (isFree) {
+                priceHtml = `<div class="price free">免费获取</div><div class="original-price">原价 ${product.original_price || product.price}</div>`;
+            } else {
+                priceHtml = `<div class="price">${product.price}</div>`;
+                if (product.original_price && product.original_price !== product.price) {
+                    priceHtml += `<div class="original-price">原价 ${product.original_price}</div>`;
+                }
+            }
+            document.getElementById('pmPrice').innerHTML = priceHtml;
+
+            // 购买按钮文字
+            const buyBtn = document.getElementById('pmBuyBtn');
+            buyBtn.textContent = isFree ? '立即免费获取' : '立即购买';
+
+            // 保存当前商品到按钮上
+            buyBtn.dataset.productId = product.id;
+            buyBtn.dataset.productTitle = product.title;
+            buyBtn.dataset.productPrice = product.price;
+
+            // 显示模态框
+            document.getElementById('productModalOverlay').classList.add('active');
+            document.body.style.overflow = 'hidden';
         }
+
+        function closeProductModal(event) {
+            if (event && event.target !== event.currentTarget) return;
+            document.getElementById('productModalOverlay').classList.remove('active');
+            document.body.style.overflow = '';
+        }
+
+        function handleProductPurchase() {
+            const buyBtn = document.getElementById('pmBuyBtn');
+            const productId = buyBtn.dataset.productId;
+            const productTitle = buyBtn.dataset.productTitle;
+            const productPrice = buyBtn.dataset.productPrice;
+
+            if (productPrice === '免费' || productPrice === '0' || !productPrice) {
+                alert(`✅ 恭喜获得「${productTitle}」！\n\n免费资源已添加到您的学习清单。\n\n💡 提示：请联系平台客服获取免费资源的访问方式。`);
+            } else {
+                alert(`🎉 即将购买「${productTitle}」\n\n价格：${productPrice}\n\n💳 支付功能即将上线，敬请期待！`);
+            }
+            closeProductModal();
+        }
+
+        // ESC键关闭模态框
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'Escape') {
+                closeProductModal();
+            }
+        });
 
         // ==================== 图表功能 ====================
         function initChart() {
