@@ -41,6 +41,14 @@ except ImportError:
     HAS_EMOTION_RAG = False
     emotion_rag = None
 
+# 导入资源推荐模块
+try:
+    from src.services.resource_recommender import resource_recommender
+    HAS_RESOURCE_RECOMMENDER = True
+except ImportError:
+    HAS_RESOURCE_RECOMMENDER = False
+    resource_recommender = None
+
 
 class AgentRole(Enum):
     """智能体角色类型"""
@@ -63,6 +71,8 @@ class ConversationContext:
     conversation_turn: int = 0
     last_agent_role: str = "listener"
     user_profile: Dict = field(default_factory=dict)
+    # 新增：追踪用户反复提到的话题
+    topic_history: List[Dict] = field(default_factory=list)  # [{"topic": "辞职", "count": 3, "last_mentioned": "..."}]
 
 
 @dataclass
@@ -505,11 +515,25 @@ class ConversationStrategy:
         # 构建系统提示
         role_prompt = EnhancedPromptManager.ROLE_PROMPTS.get(agent_role, "")
         
+        # 构建话题关注信息
+        topic_context = ""
+        if context.conversation_turn >= 2:
+            repeated_topics = [t for t in context.topic_history if t.get('count', 0) >= 2]
+            if repeated_topics:
+                repeated_topics.sort(key=lambda x: x.get('count', 0), reverse=True)
+                top_topic = repeated_topics[0]
+                topic_context = f"""
+## 话题关注
+用户反复提到的话题：{top_topic['topic']}（已提到{top_topic['count']}次）
+请在回复中适当体现你注意到了这个问题，表达关心。
+"""
+        
         emotion_context = f"""
 用户当前情绪：{emotion_analysis['primary_emotion']}
 情绪强度：{emotion_analysis['emotion_intensity']}/10
 可能的认知模式：{emotion_analysis.get('cognitive_pattern', '无')}
 建议的应对方式：{emotion_analysis.get('suggested_approach', '')}
+{topic_context}
 """
         
         # 构建对话历史
@@ -533,9 +557,17 @@ class ConversationStrategy:
 """
 
         # 使用await而不是asyncio.run()
-        return await llm_provider.chat([
+        response = await llm_provider.chat([
             {"role": "user", "content": full_prompt}
         ])
+        
+        # 在LLM回复后添加话题关注语（如果用户多次提到某个话题）
+        if context.conversation_turn >= 2:
+            topic_awareness = self._get_topic_awareness(context)
+            if topic_awareness:
+                response += topic_awareness
+        
+        return response
     
     def _generate_template_response(
         self,
@@ -559,7 +591,17 @@ class ConversationStrategy:
         }
         
         generator = role_responses.get(agent_role, self._listener_response)
-        return generator(message, emotion, intensity, context)
+        # 获取角色回复
+        response = generator(message, emotion, intensity, context)
+
+        # 添加话题关注（如果用户多次提到某个话题）
+        # 只在对话进行到一定轮次后添加
+        if context.conversation_turn >= 2:
+            topic_awareness = self._get_topic_awareness(context)
+            if topic_awareness:
+                response += topic_awareness
+
+        return response
     
     def _listener_response(self, message: str, emotion: str, intensity: int, context: ConversationContext) -> str:
         """倾听者角色回复"""
@@ -1213,12 +1255,31 @@ class EnhancedEmoHealerAgent:
 
             # 反转顺序（从旧到新）
             history = []
+            topic_count = {}  # 统计历史消息中的话题
+
+            topics_to_track = [
+                "辞职", "工作", "加班", "职场", "同事", "领导", "老板",
+                "恋爱", "分手", "婚姻", "离婚", "相亲", "对象",
+                "考试", "学习", "考研", "留学", "成绩",
+                "失眠", "睡眠", "健康", "身体", "看病",
+                "钱", "欠款", "债务", "房贷", "经济",
+                "家人", "父母", "孩子", "养老",
+                "朋友", "社交", "孤独"
+            ]
+
             for record in reversed(records):
+                user_msg = record.user_message or ""
                 history.append({
                     'role': 'user',
-                    'content': record.user_message,
+                    'content': user_msg,
                     'timestamp': record.created_at.isoformat() if record.created_at else ''
                 })
+
+                # 统计历史消息中的话题
+                for topic in topics_to_track:
+                    if topic in user_msg:
+                        topic_count[topic] = topic_count.get(topic, 0) + 1
+
                 if record.ai_reply:
                     history.append({
                         'role': 'assistant',
@@ -1226,7 +1287,18 @@ class EnhancedEmoHealerAgent:
                         'timestamp': record.created_at.isoformat() if record.created_at else ''
                     })
 
-            return history
+            # 构建话题历史
+            topic_history = []
+            for topic, count in topic_count.items():
+                if count >= 2:  # 只记录提到2次及以上的话题
+                    topic_history.append({
+                        'topic': topic,
+                        'count': count,
+                        'first_mentioned': '',
+                        'last_mentioned': ''
+                    })
+
+            return history, topic_history
         except Exception as e:
             print(f"加载历史记录失败: {e}")
             return []
@@ -1237,10 +1309,67 @@ class EnhancedEmoHealerAgent:
             # 创建新的上下文并加载历史记录
             context = ConversationContext(user_id=user_id)
             # 加载最近10条对话历史
-            history = self.load_history_from_db(user_id, limit=10)
-            context.messages = history
+            result = self.load_history_from_db(user_id, limit=10)
+            # 处理返回值（可能是tuple或list）
+            if isinstance(result, tuple):
+                history, topic_history = result
+                context.messages = history
+                context.topic_history = topic_history
+                # 从历史消息中恢复对话轮次（只计算用户消息）
+                context.conversation_turn = sum(1 for msg in history if msg.get('role') == 'user')
+            else:
+                context.messages = result
+                context.conversation_turn = sum(1 for msg in result if msg.get('role') == 'user')
             self.contexts[user_id] = context
         return self.contexts[user_id]
+    
+    def _get_topic_awareness(self, context: ConversationContext) -> str:
+        """获取话题关注语 - 用户反复提到的问题"""
+        if not context.topic_history:
+            return ""
+
+        # 找出被多次提及的话题（需要提到2次及以上）
+        repeated_topics = [t for t in context.topic_history if t.get('count', 0) >= 2]
+
+        if not repeated_topics:
+            return ""
+
+        # 按提及次数排序
+        repeated_topics.sort(key=lambda x: x.get('count', 0), reverse=True)
+        top_topic = repeated_topics[0]
+
+        topic = top_topic['topic']
+        count = top_topic['count']
+
+        # 针对不同话题生成关注语
+        topic_responses = {
+            "辞职": f"我注意到您已经多次提到想辞职的问题了。这说明这个问题困扰您很久了吧？您愿意详细说说是什么让您这么纠结吗？",
+            "工作": f"您好像对工作方面的事情很关注。之前您也提到过工作带来的压力，能多说说吗？",
+            "加班": f"您已经多次提到加班的问题了。长期这样确实会很疲惫，您觉得目前最大的困扰是什么呢？",
+            "职场": f"您对职场关系似乎有些困惑。您之前也提过，能具体说说是什么情况吗？",
+            "同事": f"您已经多次提到同事之间的关系了。能多说说是什么让您感到困扰吗？",
+            "领导": f"您好像和领导之间有些问题。您之前也提到过，能具体说说吗？",
+            "老板": f"您多次提到老板相关的事情。能说说是什么让您感到不快吗？",
+            "恋爱": f"您对感情问题很上心，之前也提到过。能多说说现在的困扰吗？",
+            "分手": f"我注意到您已经多次提到分手这个话题了。这段经历一定让您很难受，愿意多说说吗？",
+            "婚姻": f"您对婚姻问题很关注。能说说是什么让您感到困扰吗？",
+            "考试": f"您已经多次提到考试了。看来这件事给您不小的压力，能多说说吗？",
+            "学习": f"您对学习方面很关注。之前您也提到过，是什么让您感到焦虑呢？",
+            "失眠": f"您已经多次提到失眠的问题了。睡眠对身体很重要，您愿意说说是什么让您睡不好吗？",
+            "睡眠": f"您好像被睡眠问题困扰很久了。之前您也提到过，能多说说吗？",
+            "健康": f"您对健康很担心。之前也提过，能说说具体是什么情况吗？",
+            "钱": f"您多次提到经济方面的压力。能说说是什么让您感到经济紧张吗？",
+            "债务": f"我注意到您已经多次提到债务问题了。这确实让人焦虑，您愿意多说说吗？",
+            "家人": f"您对家人方面的事情很上心。之前也提过，能多说说吗？",
+            "父母": f"您已经多次提到和父母之间的问题了。能说说是什么让您困扰吗？",
+            "朋友": f"您对朋友关系很在意。之前也提过，能多说说吗？",
+            "孤独": f"我注意到您已经多次提到孤独的感受了。这种感觉一定很难受，您愿意多说说吗？"
+        }
+
+        if topic in topic_responses:
+            return f"\n\n💭 {topic_responses[topic]}"
+        else:
+            return f"\n\n💭 我注意到您已经多次提到「{topic}」了。这个问题似乎对您很重要，愿意多说说吗？"
     
     def clear_context(self, user_id: int):
         """清除对话上下文"""
@@ -1265,6 +1394,45 @@ class EnhancedEmoHealerAgent:
             'content': message,
             'timestamp': datetime.now().isoformat()
         })
+
+        # ==================== 话题追踪（用户反复提到的问题）====================
+        # 从当前消息和历史中提取话题
+        topics_to_track = [
+            "辞职", "工作", "加班", "职场", "同事", "领导", "老板",
+            "恋爱", "分手", "婚姻", "离婚", "相亲", "对象",
+            "考试", "学习", "考研", "留学", "成绩",
+            "失眠", "睡眠", "健康", "身体", "看病",
+            "钱", "欠款", "债务", "房贷", "经济",
+            "家人", "父母", "孩子", "养老",
+            "朋友", "社交", "孤独"
+        ]
+
+        # 检查当前消息中的话题
+        current_topics = []
+        for topic in topics_to_track:
+            if topic in message:
+                current_topics.append(topic)
+
+        # 更新话题历史（从历史消息中加载的count也会被累加）
+        for topic in current_topics:
+            found = False
+            for t in context.topic_history:
+                if t['topic'] == topic:
+                    t['count'] += 1
+                    t['last_mentioned'] = datetime.now().isoformat()
+                    found = True
+                    print(f"话题追踪: 用户提到'{topic}', 当前计数={t['count']}")
+                    break
+            if not found:
+                context.topic_history.append({
+                    'topic': topic,
+                    'count': 1,  # 当前消息提到1次
+                    'first_mentioned': datetime.now().isoformat(),
+                    'last_mentioned': datetime.now().isoformat()
+                })
+                print(f"话题追踪: 用户首次提到'{topic}'")
+        
+        print(f"话题追踪: conversation_turn={context.conversation_turn}, topic_history={context.topic_history}")
 
         # ==================== RAG增强情绪分析 ====================
         if emotion is None:
@@ -1340,6 +1508,14 @@ class EnhancedEmoHealerAgent:
             message, emotion, context, llm_provider
         )
 
+        # 在回复中添加话题关注语（如果用户多次提到某个话题）
+        # conversation_turn >= 1 表示这是第二轮或之后的对话
+        if context.conversation_turn >= 1:
+            topic_awareness = self._get_topic_awareness(context)
+            if topic_awareness:
+                result['response'] += topic_awareness
+                print(f"[话题追踪] 已添加关注语: {topic_awareness[:50]}...")
+
         # 记录AI回复
         context.messages.append({
             'role': 'assistant',
@@ -1375,6 +1551,34 @@ class EnhancedEmoHealerAgent:
         # 添加知识库内容
         if knowledge_tips:
             response_data['knowledge_tips'] = knowledge_tips
+
+        # 添加智能资源推荐
+        if HAS_RESOURCE_RECOMMENDER and resource_recommender:
+            try:
+                # 每隔几轮或情绪强烈时推荐
+                should_recommend = (
+                    context.conversation_turn % 3 == 0 or  # 每3轮推荐一次
+                    confidence >= 0.7 or  # 情绪强度高时推荐
+                    emotion in ['sad', 'anxious', 'angry']  # 负面情绪时推荐
+                )
+
+                if should_recommend:
+                    # 获取资源推荐
+                    intensity = confidence if confidence else 0.5
+                    emotion_history = context.emotion_history[-5:] if context.emotion_history else []
+
+                    recommend_result = resource_recommender.recommend_for_context(
+                        message=message,
+                        emotion=emotion,
+                        emotion_history=emotion_history,
+                        max_items=3
+                    )
+
+                    if recommend_result.get('recommendations'):
+                        response_data['resource_recommendations'] = recommend_result['recommendations']
+                        response_data['recommend_reason'] = recommend_result.get('recommend_reason', '')
+            except Exception as e:
+                print(f"获取推荐失败: {e}")
 
         # 估算Token消耗（用于报表记录）
         prompt_text = message + (result.get('response', '') if isinstance(result, dict) else '')
