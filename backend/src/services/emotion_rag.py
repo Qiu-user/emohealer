@@ -34,7 +34,7 @@ class EmotionRAG:
             with open(self.kb_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except Exception as e:
-            print(f"加载知识库失败: {e}")
+            print(f"Failed to load knowledge base: {e}")
             return {}
 
     def analyze_emotion(self, message: str, context: Dict = None) -> Dict:

@@ -116,76 +116,83 @@ def get_current_user(
 
 @router.post("/chat/send", response_model=ChatResponse)
 async def send_message(
-    request: ChatRequest, 
+    request: ChatRequest,
     current_user: User = Depends(get_current_user),
     db: Session = Depends(get_db)
 ):
     """发送消息，获取AI回复（使用增强版AI智能体）"""
-    # 使用增强版AI智能体生成回复（传递db session以加载历史记录）
-    ai_result = await enhanced_ai_agent.chat(current_user.id, request.message, request.emotion, db)
-    
-    # 保存对话记录
-    chat_record = ChatRecord(
-        user_id=current_user.id,
-        user_message=request.message,
-        ai_reply=ai_result["reply"],
-        emotion_type=ai_result["emotion"],
-        emotion_score=ai_result.get("confidence", 0.8) * 100,
-        is_crisis=ai_result["is_crisis"],
-        created_at=datetime.now()
-    )
-    db.add(chat_record)
-    
-    # 保存情绪日志
-    emotion_log = EmotionLog(
-        user_id=current_user.id,
-        emotion_type=ai_result["emotion"],
-        emotion_score=ai_result.get("confidence", 0.8) * 100,
-        confidence=ai_result.get("confidence", 0.8),
-        source="text",
-        trigger_context=request.message[:100],
-        created_at=datetime.now()
-    )
-    db.add(emotion_log)
-    
-    # 如果是危机，生成预警
-    if ai_result["is_crisis"]:
-        crisis_level = ai_result.get("crisis_level", "high")
-        crisis_alert = CrisisAlert(
+    try:
+        # 使用增强版AI智能体生成回复（传递db session以加载历史记录）
+        ai_result = await enhanced_ai_agent.chat(current_user.id, request.message, request.emotion, db)
+
+        # 保存对话记录
+        chat_record = ChatRecord(
             user_id=current_user.id,
-            alert_level=crisis_level,
-            reason=f"检测到危机关键词: {request.message[:50]}",
-            chat_record_id=chat_record.id,
-            is_handled=False,
+            user_message=request.message,
+            ai_reply=ai_result["reply"],
+            emotion_type=ai_result["emotion"],
+            emotion_score=ai_result.get("confidence", 0.8) * 100,
+            is_crisis=ai_result["is_crisis"],
             created_at=datetime.now()
         )
-        db.add(crisis_alert)
+        db.add(chat_record)
 
-    # 记录Token消耗（如果有）
-    if ai_result.get("token_usage"):
-        try:
-            from src.models.models import TokenUsage
-            token_info = ai_result["token_usage"]
-            token_usage = TokenUsage(
+        # 保存情绪日志
+        emotion_log = EmotionLog(
+            user_id=current_user.id,
+            emotion_type=ai_result["emotion"],
+            emotion_score=ai_result.get("confidence", 0.8) * 100,
+            confidence=ai_result.get("confidence", 0.8),
+            source="text",
+            trigger_context=request.message[:100],
+            created_at=datetime.now()
+        )
+        db.add(emotion_log)
+
+        # 如果是危机，生成预警
+        if ai_result["is_crisis"]:
+            crisis_level = ai_result.get("crisis_level", "high")
+            crisis_alert = CrisisAlert(
                 user_id=current_user.id,
-                model_provider=token_info.get("provider", "mock"),
-                model_name=token_info.get("model", "mock"),
-                prompt_tokens=token_info.get("prompt_tokens", 0),
-                completion_tokens=token_info.get("completion_tokens", 0),
-                total_tokens=token_info.get("total_tokens", 0),
-                cost=token_info.get("cost", 0),
-                conversation_type="chat",
-                response_time=token_info.get("response_time", 0),
+                alert_level=crisis_level,
+                reason=f"检测到危机关键词: {request.message[:50]}",
+                chat_record_id=chat_record.id,
+                is_handled=False,
                 created_at=datetime.now()
             )
-            db.add(token_usage)
-        except Exception as e:
-            print(f"记录Token消耗失败: {e}")
+            db.add(crisis_alert)
 
-    db.commit()
-    db.refresh(chat_record)
-    
-    return ChatResponse(**ai_result)
+        # 记录Token消耗（如果有）
+        if ai_result.get("token_usage"):
+            try:
+                from src.models.models import TokenUsage
+                token_info = ai_result["token_usage"]
+                token_usage = TokenUsage(
+                    user_id=current_user.id,
+                    model_provider=token_info.get("provider", "mock"),
+                    model_name=token_info.get("model", "mock"),
+                    prompt_tokens=token_info.get("prompt_tokens", 0),
+                    completion_tokens=token_info.get("completion_tokens", 0),
+                    total_tokens=token_info.get("total_tokens", 0),
+                    cost=token_info.get("cost", 0),
+                    conversation_type="chat",
+                    response_time=token_info.get("response_time", 0),
+                    created_at=datetime.now()
+                )
+                db.add(token_usage)
+            except Exception as e:
+                print(f"Failed to record token usage: {e}")
+
+        db.commit()
+        db.refresh(chat_record)
+
+        return ChatResponse(**ai_result)
+    except Exception as e:
+        import traceback
+        print(f"Chat API error: {e}")
+        print(traceback.format_exc())
+        db.rollback()
+        raise HTTPException(status_code=500, detail=f"服务器错误: {str(e)}")
 
 # ==================== 用户认证接口 ====================
 

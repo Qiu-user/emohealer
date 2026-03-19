@@ -987,7 +987,7 @@ class EmoHealerAgent:
                     self.prompt_manager.SYSTEM_PROMPT
                 )
             except Exception as e:
-                print(f"LLM调用失败: {e}")
+                print(f"LLM call failed: {e}")
                 # 使用场景化回复生成器
                 reply = self.scenario_generator.generate(message, emotion, context)
         else:

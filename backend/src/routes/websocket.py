@@ -35,14 +35,14 @@ class ConnectionManager:
         await websocket.accept()
         self.active_connections[user_id] = websocket
         self.connection_user_map[websocket] = user_id
-        print(f"用户 {user_id} WebSocket 连接成功，当前在线: {len(self.active_connections)}人")
+        print(f"User {user_id} WebSocket connected, online: {len(self.active_connections)}")
     
     def disconnect(self, websocket: WebSocket):
         """断开连接"""
         user_id = self.connection_user_map.pop(websocket, None)
         if user_id and user_id in self.active_connections:
             del self.active_connections[user_id]
-            print(f"用户 {user_id} WebSocket 断开，当前在线: {len(self.active_connections)}人")
+            print(f"User {user_id} WebSocket disconnected, online: {len(self.active_connections)}")
     
     async def send_personal_message(self, message: dict, user_id: int):
         """发送消息给指定用户"""
@@ -50,7 +50,7 @@ class ConnectionManager:
             try:
                 await self.active_connections[user_id].send_json(message)
             except Exception as e:
-                print(f"发送消息失败: {e}")
+                print(f"Failed to send message: {e}")
     
     async def broadcast(self, message: dict):
         """广播消息给所有在线用户"""
@@ -275,7 +275,7 @@ async def websocket_chat(
                             await websocket.send_json(crisis_message)
                             
                     except Exception as e:
-                        print(f"AI处理错误: {e}")
+                        print(f"AI processing error: {e}")
                         await websocket.send_json({
                             "type": "error",
                             "content": "AI服务暂时不可用，请稍后重试",
@@ -286,7 +286,7 @@ async def websocket_chat(
                     # 更新用户当前情绪状态
                     emotion = message_data.get("emotion", "neutral")
                     # 可以选择保存到数据库或内存
-                    print(f"用户 {user.id} 情绪更新: {emotion}")
+                    print(f"User {user.id} emotion updated: {emotion}")
                     
             except json.JSONDecodeError:
                 await websocket.send_json({
@@ -297,11 +297,11 @@ async def websocket_chat(
             except WebSocketDisconnect:
                 break
             except Exception as e:
-                print(f"WebSocket错误: {e}")
+                print(f"WebSocket error: {e}")
                 break
                 
     except Exception as e:
-        print(f"WebSocket连接错误: {e}")
+        print(f"WebSocket connection error: {e}")
     finally:
         manager.disconnect(websocket)
 
@@ -350,9 +350,9 @@ async def websocket_admin(websocket: WebSocket):
                 }, target_user_id)
                 
     except WebSocketDisconnect:
-        print("管理员WebSocket断开")
+        print("Admin WebSocket disconnected")
     except Exception as e:
-        print(f"管理员WebSocket错误: {e}")
+        print(f"Admin WebSocket error: {e}")
 
 
 # ==================== 辅助接口 ====================

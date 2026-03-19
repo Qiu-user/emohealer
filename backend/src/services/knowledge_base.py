@@ -30,10 +30,10 @@ class KnowledgeBase:
             with open(self.kb_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except FileNotFoundError:
-            print(f"知识库文件未找到: {self.kb_path}")
+            print(f"Knowledge base file not found: {self.kb_path}")
             return {"categories": {}}
         except json.JSONDecodeError:
-            print(f"知识库JSON格式错误")
+            print(f"Knowledge base JSON format error")
             return {"categories": {}}
 
     def search(self, query: str, emotion: str = None, max_results: int = 2) -> List[Dict]:
