@@ -1816,4 +1816,194 @@ def get_operation_logs(
         }
 
 
+# ==================== 心理健康资源商城接口 ====================
+
+from src.services.resource_recommender import resource_recommender
+
+
+@router.get("/store/categories")
+def get_store_categories():
+    """获取商城所有分类"""
+    categories = resource_recommender.knowledge.get("categories", {})
+    result = []
+    for key, cat in categories.items():
+        result.append({
+            "key": key,
+            "name": cat.get("name", ""),
+            "icon": cat.get("icon", ""),
+            "item_count": len(cat.get("items", []))
+        })
+    return {"code": 200, "data": result}
+
+
+@router.get("/store/products")
+def get_store_products(
+    category: str = None,
+    emotion: str = None,
+    keyword: str = None,
+    page: int = 1,
+    page_size: int = 20
+):
+    """获取商品列表（支持分类、情绪、关键词筛选）"""
+    categories = resource_recommender.knowledge.get("categories", {})
+    all_products = []
+
+    for cat_key, cat in categories.items():
+        # 分类过滤
+        if category and cat_key != category:
+            continue
+
+        for item in cat.get("items", []):
+            product = {
+                "id": item.get("id", ""),
+                "title": item.get("title", ""),
+                "description": item.get("description", ""),
+                "category_key": cat_key,
+                "category_name": cat.get("name", ""),
+                "category_icon": cat.get("icon", ""),
+                "target_emotions": item.get("target_emotions", []),
+                "price": item.get("price", "免费"),
+                "duration": item.get("duration", item.get("read_time", "")),
+                "level": item.get("level", item.get("type", "")),
+                "author": item.get("author", ""),
+                "url": item.get("url", "#")
+            }
+
+            # 情绪过滤
+            if emotion and emotion not in item.get("target_emotions", []):
+                continue
+
+            # 关键词过滤
+            if keyword:
+                kw_lower = keyword.lower()
+                title_lower = item.get("title", "").lower()
+                desc_lower = item.get("description", "").lower()
+                if kw_lower not in title_lower and kw_lower not in desc_lower:
+                    continue
+
+            all_products.append(product)
+
+    # 分页
+    total = len(all_products)
+    start = (page - 1) * page_size
+    end = start + page_size
+    paginated = all_products[start:end]
+
+    return {
+        "code": 200,
+        "data": {
+            "total": total,
+            "page": page,
+            "page_size": page_size,
+            "list": paginated
+        }
+    }
+
+
+@router.get("/store/product/{product_id}")
+def get_product_detail(product_id: str):
+    """获取商品详情"""
+    categories = resource_recommender.knowledge.get("categories", {})
+
+    for cat_key, cat in categories.items():
+        for item in cat.get("items", []):
+            if item.get("id") == product_id:
+                return {
+                    "code": 200,
+                    "data": {
+                        "id": item.get("id", ""),
+                        "title": item.get("title", ""),
+                        "description": item.get("description", ""),
+                        "category_key": cat_key,
+                        "category_name": cat.get("name", ""),
+                        "category_icon": cat.get("icon", ""),
+                        "target_emotions": item.get("target_emotions", []),
+                        "price": item.get("price", "免费"),
+                        "duration": item.get("duration", item.get("read_time", "")),
+                        "level": item.get("level", item.get("type", "")),
+                        "author": item.get("author", ""),
+                        "url": item.get("url", "#"),
+                        "category": item.get("category", "")
+                    }
+                }
+
+    return {"code": 404, "message": "商品不存在"}
+
+
+@router.get("/store/emotions")
+def get_emotion_filters():
+    """获取情绪筛选选项"""
+    return {
+        "code": 200,
+        "data": [
+            {"key": "anxious", "name": "焦虑", "icon": "😰", "color": "#E8A598"},
+            {"key": "sad", "name": "悲伤", "icon": "😢", "color": "#7EB8DA"},
+            {"key": "angry", "name": "愤怒", "icon": "😠", "color": "#F87171"},
+            {"key": "tired", "name": "疲惫", "icon": "😴", "color": "#A78BFA"},
+            {"key": "fear", "name": "恐惧", "icon": "😨", "color": "#6B7280"},
+            {"key": "lonely", "name": "孤独", "icon": "😔", "color": "#9DD6C3"},
+            {"key": "confused", "name": "迷茫", "icon": "🤔", "color": "#FBBF24"},
+            {"key": "happy", "name": "愉悦", "icon": "😊", "color": "#34D399"},
+            {"key": "neutral", "name": "平和", "icon": "😌", "color": "#60A5FA"}
+        ]
+    }
+
+
+@router.get("/store/recommend/{user_id}")
+def get_personalized_recommend(user_id: int, db: Session = Depends(get_db)):
+    """获取个性化推荐（基于用户情绪历史）"""
+    from datetime import datetime, timedelta
+
+    # 获取用户最近的情绪
+    recent_logs = db.query(EmotionLog).filter(
+        EmotionLog.user_id == user_id
+    ).order_by(EmotionLog.created_at.desc()).limit(10).all()
+
+    if not recent_logs:
+        # 没有历史，返回默认推荐
+        emotion = "neutral"
+        intensity = 0.5
+    else:
+        # 统计主导情绪
+        emotion_counts = {}
+        for log in recent_logs:
+            if log.emotion_type:
+                emotion_counts[log.emotion_type] = emotion_counts.get(log.emotion_type, 0) + 1
+        emotion = max(emotion_counts, key=emotion_counts.get) if emotion_counts else "neutral"
+
+        # 计算平均强度
+        scores = [float(log.emotion_score) for log in recent_logs if log.emotion_score]
+        intensity = sum(scores) / len(scores) / 100 if scores else 0.5
+
+    # 使用推荐器获取推荐
+    result = resource_recommender.recommend(emotion, intensity, max_per_category=2)
+
+    # 格式化返回
+    recommendations = []
+    for rec in result.get("recommendations", []):
+        recommendations.append({
+            "id": rec.get("id", ""),
+            "title": rec.get("title", ""),
+            "description": rec.get("description", ""),
+            "category_key": rec.get("category_key", ""),
+            "category_name": rec.get("category_name", ""),
+            "category_icon": rec.get("category_icon", ""),
+            "duration": rec.get("duration", rec.get("read_time", "")),
+            "url": rec.get("url", "#"),
+            "match_score": rec.get("score", 0)
+        })
+
+    return {
+        "code": 200,
+        "data": {
+            "user_emotion": emotion,
+            "recommend_reason": result.get("recommend_reason", ""),
+            "recommendations": recommendations
+        }
+    }
+
+
+
+
+
 
