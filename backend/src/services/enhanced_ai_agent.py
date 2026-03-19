@@ -560,13 +560,7 @@ class ConversationStrategy:
         response = await llm_provider.chat([
             {"role": "user", "content": full_prompt}
         ])
-        
-        # 在LLM回复后添加话题关注语（如果用户多次提到某个话题）
-        if context.conversation_turn >= 2:
-            topic_awareness = self._get_topic_awareness(context)
-            if topic_awareness:
-                response += topic_awareness
-        
+
         return response
     
     def _generate_template_response(
@@ -593,13 +587,6 @@ class ConversationStrategy:
         generator = role_responses.get(agent_role, self._listener_response)
         # 获取角色回复
         response = generator(message, emotion, intensity, context)
-
-        # 添加话题关注（如果用户多次提到某个话题）
-        # 只在对话进行到一定轮次后添加
-        if context.conversation_turn >= 2:
-            topic_awareness = self._get_topic_awareness(context)
-            if topic_awareness:
-                response += topic_awareness
 
         return response
     
@@ -1367,9 +1354,9 @@ class EnhancedEmoHealerAgent:
         }
 
         if topic in topic_responses:
-            return f"\n\n💭 {topic_responses[topic]}"
+            return f"\n\n* {topic_responses[topic]}"
         else:
-            return f"\n\n💭 我注意到您已经多次提到「{topic}」了。这个问题似乎对您很重要，愿意多说说吗？"
+            return f"\n\n* 我注意到您已经多次提到「{topic}」了。这个问题似乎对您很重要，愿意多说说吗？"
     
     def clear_context(self, user_id: int):
         """清除对话上下文"""
@@ -1514,7 +1501,7 @@ class EnhancedEmoHealerAgent:
             topic_awareness = self._get_topic_awareness(context)
             if topic_awareness:
                 result['response'] += topic_awareness
-                print(f"[话题追踪] 已添加关注语: {topic_awareness[:50]}...")
+                print(f"[Topic Track] Added awareness: {topic_awareness[:30]}...")
 
         # 记录AI回复
         context.messages.append({

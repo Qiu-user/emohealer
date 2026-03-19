@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>EmoHealer AI - 情绪疗愈医生</title>
-    <script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+    <script src="echarts.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@300;400;500;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -2058,9 +2058,6 @@
             const keysToClean = ['emohealer_emotion_history', 'emohealer_journals'];
             keysToClean.forEach(key => localStorage.removeItem(key));
             console.log('已清理旧缓存数据');
-                    // token解析失败，忽略
-                }
-            }
         })();
         
         // 呼吸练习变量
@@ -2468,10 +2465,13 @@
                 const result = await response.json();
 
                 if (response.ok) {
-                    currentUserId = result.user_id;
-                    currentUser = result;
-                    authToken = result.token;
+                    // 兼容两种响应格式：{user_id, token} 或 {code:200, data:{user_id, token}}
+                    const userData = result.data || result;
+                    currentUserId = userData.user_id;
+                    currentUser = userData;
+                    authToken = userData.token;
                     localStorage.setItem('emohealer_token', authToken);
+                    console.log('登录成功，Token:', authToken, 'UserID:', currentUserId);
 
                     // 重置情绪历史，加载新用户的数据
                     userEmotionHistory = [];
@@ -2745,9 +2745,16 @@
         }
 
         async function sendMessage() {
+            // 检查是否已登录
+            if (!currentUserId || !authToken) {
+                alert('请先登录后再发送消息');
+                showPage('login');
+                return;
+            }
+
             const input = document.getElementById('chatInput');
             const message = input.value.trim();
-            
+
             if (!message) return;
 
             const sendBtn = document.getElementById('sendBtn');
@@ -2769,6 +2776,9 @@
 
             // 回退到HTTP API
             showTypingIndicator();
+
+            console.log('发送消息 - Token:', authToken, 'UserID:', currentUserId);
+            console.log('API URL:', `${API_BASE}/chat/send`);
 
             try {
                 const response = await fetch(`${API_BASE}/chat/send`, {
@@ -2897,9 +2907,13 @@
 
         // ==================== 图表功能 ====================
         function initChart() {
+            // 延迟执行确保DOM已完全渲染
             setTimeout(function() {
                 const chartDom = document.getElementById('emotionChart');
-                if (!chartDom) return;
+                if (!chartDom || !chartDom.offsetParent) {
+                    console.log('图表容器不存在或不可见，跳过初始化');
+                    return;
+                }
                 
                 // 销毁已存在的图表实例
                 try {
