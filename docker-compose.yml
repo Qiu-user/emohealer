@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  # MySQL 数据库服务
+  mysql:
+    image: mysql:8.0
+    container_name: emohealer_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-emohealer_root_2026}
+      MYSQL_DATABASE: ${MYSQL_DATABASE:-emohealer}
+      MYSQL_USER: ${MYSQL_USER:-emohealer}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD:-emohealer_pass_2026}
+    ports:
+      - "${MYSQL_PORT:-3306}:3306"
+    volumes:
+      # 初始化脚本（只执行一次）
+      - ./database/init.sql:/docker-entrypoint-initdb.d/01-init.sql:ro
+      - ./database/test_data.sql:/docker-entrypoint-initdb.d/02-test-data.sql:ro
+      # 持久化数据
+      - mysql_data:/var/lib/mysql
+    command:
+      # UTF-8 中文支持
+      --character-set-server=utf8mb4
+      --collation-server=utf8mb4_unicode_ci
+      --default-authentication-plugin=mysql_native_password
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-emohealer_root_2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # 后端API服务（可选）
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: emohealer_backend
+    restart: unless-stopped
+    environment:
+      - DB_HOST=mysql
+      - DB_PORT=3306
+      - DB_USER=${MYSQL_USER:-emohealer}
+      - DB_PASSWORD=${MYSQL_PASSWORD:-emohealer_pass_2026}
+      - DB_NAME=${MYSQL_DATABASE:-emohealer}
+    ports:
+      - "${BACKEND_PORT:-8092}:8092"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    volumes:
+      - ./backend:/app
+
+  # 前端服务（可选）
+  frontend:
+    image: nginx:alpine
+    container_name: emohealer_frontend
+    restart: unless-stopped
+    ports:
+      - "${FRONTEND_PORT:-5000}:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+    depends_on:
+      - backend
+
+volumes:
+  mysql_data:
+    driver: local
+
+networks:
+  default:
+    name: emohealer_network

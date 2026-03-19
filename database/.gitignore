@@ -1,0 +1,5 @@
+# database/.gitignore
+# 此目录下除 .gitignore 和 .sql 文件外的其他文件将被忽略
+*.pyc
+__pycache__/
+*.log
